@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #8b5cf6;
+  --color-brand-dark: #7c3aed;
+  --color-brand-light: #a78bfa;
+  --color-gold: #f59e0b;
+  --color-gold-light: #fcd34d;
+  --color-surface: #14141f;
+  --color-surface-2: #1e1e2e;
+  --color-surface-3: #252538;
+  --color-app-bg: #0a0a12;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+  --color-muted: #6b7280;
+  --color-muted-light: #9ca3af;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-light: rgba(255, 255, 255, 0.14);
+}
+
+:root {
+  --bg: #0a0a12;
+  --surface: #14141f;
+  --surface-2: #1e1e2e;
+  --surface-3: #252538;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.14);
+  --brand: #8b5cf6;
+  --brand-dark: #7c3aed;
+  --brand-light: #a78bfa;
+  --gold: #f59e0b;
+  --text: #f1f1f8;
+  --text-muted: #6b7280;
+  --text-soft: #9ca3af;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+/* Selection */
+::selection { background: rgba(139, 92, 246, 0.35); }
+
+/* Focus rings */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, #a78bfa, #f59e0b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-brand {
+  background: linear-gradient(135deg, #c4b5fd, #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Card glow effects */
+.card-glow {
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2), 0 4px 24px rgba(139, 92, 246, 0.08);
+}
+
+.card-glow-gold {
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.3), 0 4px 32px rgba(245, 158, 11, 0.12);
+}
+
+/* Phase colors */
+.phase-submission { color: #60a5fa; }
+.phase-voting { color: #fbbf24; }
+.phase-results { color: #34d399; }
+
+.phase-bg-submission { background: rgba(96, 165, 250, 0.12); }
+.phase-bg-voting { background: rgba(251, 191, 36, 0.12); }
+.phase-bg-results { background: rgba(52, 211, 153, 0.12); }
+
+.phase-border-submission { border-color: rgba(96, 165, 250, 0.3); }
+.phase-border-voting { border-color: rgba(251, 191, 36, 0.3); }
+.phase-border-results { border-color: rgba(52, 211, 153, 0.3); }
+
+/* Safe area padding for iOS */
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Animated shimmer for loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Winner crown animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.6); }
+}
+
+.float { animation: float 3s ease-in-out infinite; }
+.pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+
+/* Confetti burst (CSS only) */
+@keyframes confetti-drop {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100px) rotate(360deg); opacity: 0; }
+}
+
+/* Vote button scale */
+.vote-btn:hover { transform: scale(1.05); }
+.vote-btn:active { transform: scale(0.95); }
+
+/* Slide up animation */
+@keyframes slideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.slide-up { animation: slideUp 0.3s ease-out forwards; }
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in { animation: fadeIn 0.4s ease-out forwards; }
