@@ -204,24 +204,83 @@ export async function getRoundData(roundId: string, userId: string) {
 
   const userVote = (votes ?? []).find((v) => v.voter_id === userId) ?? null
 
-  const countMap: Record<string, { profile: Profile; count: number; voters: Profile[]; comments: string[] }> = {}
+  // Tally nominations
+  const countMap: Record<string, { profile: Profile; count: number; comments: string[] }> = {}
   for (const v of votes ?? []) {
     const uid = v.nominated_user_id
-    if (!countMap[uid]) countMap[uid] = { profile: v.nominee as Profile, count: 0, voters: [], comments: [] }
+    if (!countMap[uid]) countMap[uid] = { profile: v.nominee as Profile, count: 0, comments: [] }
     countMap[uid].count++
-    countMap[uid].voters.push(v.voter as Profile)
     if (v.comment) countMap[uid].comments.push(v.comment)
   }
 
   const nominations: NominationResult[] = Object.values(countMap)
-    .map((e) => ({ profile: e.profile, vote_count: e.count, voter_profiles: e.voters, comments: e.comments }))
+    .map((e) => ({ profile: e.profile, vote_count: e.count, comments: e.comments }))
     .sort((a, b) => b.vote_count - a.vote_count)
 
   const winner = nominations.length > 0 && nominations[0].vote_count > 0
     ? nominations[0]
     : null
 
-  return { nominations, userVote, winner, totalVotes: (votes ?? []).length }
+  // Collect all comments across all nominations (shown anonymously in results)
+  const allComments = (votes ?? [])
+    .map((v) => v.comment as string | null)
+    .filter((c): c is string => !!c)
+
+  // Pick and persist a revealed voter
+  const revealedVoter = await ensureRevealedVoter(admin, roundId, votes ?? [])
+
+  return {
+    nominations,
+    userVote,
+    winner,
+    totalVotes: (votes ?? []).length,
+    allComments,
+    revealedVoter,
+  }
+}
+
+// Atomically pick one random voter to be publicly revealed for a round.
+// Once set it never changes — same person stays exposed.
+async function ensureRevealedVoter(
+  admin: ReturnType<typeof createAdminClient>,
+  roundId: string,
+  votes: Array<{ voter_id: string; voter: unknown }>,
+): Promise<Profile | null> {
+  if (votes.length === 0) return null
+
+  // Check if already set
+  const { data: round } = await admin
+    .from('rounds')
+    .select('revealed_voter_id')
+    .eq('id', roundId)
+    .single()
+
+  let revealedId = round?.revealed_voter_id as string | null
+
+  if (!revealedId) {
+    // Pick a random voter and store it atomically (IS NULL guard prevents overwrites)
+    const picked = votes[Math.floor(Math.random() * votes.length)]
+    revealedId = picked.voter_id
+
+    await admin
+      .from('rounds')
+      .update({ revealed_voter_id: revealedId })
+      .eq('id', roundId)
+      .is('revealed_voter_id', null)
+
+    // Re-fetch in case of race condition — use whatever was actually stored
+    const { data: updated } = await admin
+      .from('rounds')
+      .select('revealed_voter_id')
+      .eq('id', roundId)
+      .single()
+
+    revealedId = updated?.revealed_voter_id ?? revealedId
+  }
+
+  // Return the full profile of the revealed voter
+  const revealedVote = votes.find((v) => v.voter_id === revealedId)
+  return revealedVote ? (revealedVote.voter as Profile) : null
 }
 
 // ─── Group history ────────────────────────────────────────────────────────────

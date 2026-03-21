@@ -6,20 +6,23 @@ import { Card } from '@/components/ui/Card'
 import { CategoryPicker } from '@/components/rounds/CategoryPicker'
 import { CATEGORY_META } from '@/lib/categories'
 import { getAvatarColor, cn } from '@/lib/utils'
-import type { NominationResult } from '@/types/database'
+import type { NominationResult, Profile } from '@/types/database'
 
 interface WinnerRevealProps {
-  winner:        NominationResult | null
-  nominations:   NominationResult[]
-  totalVotes:    number
-  userId:        string
-  roundId:       string
-  groupId:       string
-  nextCategory:  string | null
+  winner:         NominationResult | null
+  nominations:    NominationResult[]
+  totalVotes:     number
+  allComments:    string[]
+  revealedVoter:  Profile | null
+  userId:         string
+  roundId:        string
+  groupId:        string
+  nextCategory:   string | null
 }
 
 export function WinnerReveal({
-  winner, nominations, totalVotes, userId, roundId, groupId, nextCategory,
+  winner, nominations, totalVotes, allComments, revealedVoter,
+  userId, roundId, groupId, nextCategory,
 }: WinnerRevealProps) {
   const [revealed, setRevealed] = useState(false)
   useEffect(() => { const t = setTimeout(() => setRevealed(true), 300); return () => clearTimeout(t) }, [])
@@ -28,6 +31,7 @@ export function WinnerReveal({
   const categoryLabel = nextCategory
     ? nextCategory.charAt(0).toUpperCase() + nextCategory.slice(1)
     : null
+  const isRevealedVoterYou = revealedVoter?.id === userId
 
   return (
     <div className="flex flex-col gap-5 slide-up">
@@ -64,20 +68,6 @@ export function WinnerReveal({
               </p>
             </div>
           </div>
-
-          {winner.voter_profiles && winner.voter_profiles.length > 0 && (
-            <div className="mt-3">
-              <p className="text-xs text-white/30 mb-2">Voted by:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {winner.voter_profiles.map((v) => (
-                  <span key={v.id} className="inline-flex items-center gap-1 bg-white/6 rounded-full px-2.5 py-1 text-xs text-white/60">
-                    <Avatar username={v.username} color={v.avatar_color || getAvatarColor(v.id)} size="sm" />
-                    @{v.username}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       ) : (
         <Card className="text-center py-10">
@@ -89,13 +79,72 @@ export function WinnerReveal({
         </Card>
       )}
 
+      {/* ── Exposed voter ── */}
+      {revealedVoter && (
+        <div className={cn(
+          'rounded-3xl border border-red-500/40 bg-red-500/8 p-5 transition-all duration-700 delay-300',
+          revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        )}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">👀</span>
+            <p className="text-xs font-bold text-red-400/80 uppercase tracking-widest">
+              Someone got exposed
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 bg-black/20 rounded-2xl border border-red-500/15 p-4">
+            <div className="relative">
+              <Avatar
+                username={revealedVoter.username}
+                color={revealedVoter.avatar_color || getAvatarColor(revealedVoter.id)}
+                size="xl"
+              />
+              <span className="absolute -top-1 -right-1 text-sm">🔥</span>
+            </div>
+            <div>
+              <p className="font-black text-white text-xl">
+                @{revealedVoter.username}
+                {isRevealedVoterYou && <span className="text-red-400 text-sm font-normal ml-1">(you)</span>}
+              </p>
+              <p className="text-red-400/70 text-sm font-medium mt-0.5">
+                This person voted today
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-white/25 text-center mt-3 italic">
+            Everyone else stays anonymous 🤫
+          </p>
+        </div>
+      )}
+
+      {/* ── Anonymous reactions ── */}
+      {allComments.length > 0 && (
+        <div className={cn(
+          'rounded-3xl border border-brand/20 bg-brand/6 p-5 transition-all duration-700 delay-500',
+          revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        )}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">💬</span>
+            <p className="text-xs font-bold text-brand-light/70 uppercase tracking-widest">
+              Anonymous reactions
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            {allComments.map((c, i) => (
+              <div key={i} className="bg-black/20 rounded-xl border border-white/6 px-4 py-2.5">
+                <p className="text-sm text-white/70 italic leading-snug">&ldquo;{c}&rdquo;</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Category picker / status ── */}
       {winner && (
         isCurrentUserWinner ? (
-          // Show picker if winner hasn't chosen yet, otherwise show confirmation
           nextCategory ? (
             <div className="rounded-2xl border border-brand/30 bg-brand/10 p-4 text-center">
-                <p className="text-2xl mb-1">{CATEGORY_META[nextCategory]?.emoji ?? '🎯'}</p>
+              <p className="text-2xl mb-1">{CATEGORY_META[nextCategory]?.emoji ?? '🎯'}</p>
               <p className="font-bold text-white text-sm">
                 You set tomorrow's category: <span className="text-brand-light">{categoryLabel}</span>
               </p>
@@ -105,7 +154,6 @@ export function WinnerReveal({
             <CategoryPicker roundId={roundId} groupId={groupId} />
           )
         ) : (
-          // Non-winners see the status
           <div className="rounded-2xl border border-white/8 bg-surface p-4 flex items-center gap-3">
             {nextCategory ? (
               <>
@@ -134,7 +182,7 @@ export function WinnerReveal({
         )
       )}
 
-      {/* ── Vote breakdown ── */}
+      {/* ── Vote breakdown (counts only, no voter names) ── */}
       {nominations.length > 0 && (
         <div>
           <p className="text-xs font-bold text-white/40 uppercase tracking-wide mb-3">Vote Breakdown</p>
@@ -166,6 +214,11 @@ export function WinnerReveal({
                       </p>
                       <span className="text-xs text-white/40 tabular-nums shrink-0 ml-2">
                         {n.vote_count} vote{n.vote_count !== 1 ? 's' : ''}
+                        {totalVotes > 0 && (
+                          <span className="text-white/25">
+                            {' '}· {Math.round(pct)}%
+                          </span>
+                        )}
                       </span>
                     </div>
                     <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
@@ -174,16 +227,6 @@ export function WinnerReveal({
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    {/* Anonymous comments for this nominee */}
-                    {n.comments && n.comments.length > 0 && (
-                      <div className="flex flex-col gap-1 mt-2">
-                        {n.comments.map((c, ci) => (
-                          <p key={ci} className="text-xs text-white/45 italic leading-snug">
-                            💬 &ldquo;{c}&rdquo;
-                          </p>
-                        ))}
-                      </div>
-                    )}
                   </div>
                   {isWinner && <span className="text-lg shrink-0">🏆</span>}
                 </div>

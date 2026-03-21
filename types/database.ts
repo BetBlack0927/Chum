@@ -34,7 +34,8 @@ export type Round = {
   group_id: string
   prompt_id: string
   date: string
-  next_category: string | null  // set by winner during results phase
+  next_category: string | null     // set by winner during results phase
+  revealed_voter_id: string | null // one randomly-exposed voter per round
   created_at: string
 }
 
@@ -66,8 +67,7 @@ export type GroupMemberWithProfile = GroupMember & {
 export type NominationResult = {
   profile: Profile
   vote_count: number
-  voter_profiles?: Profile[]  // who voted for them (shown in results)
-  comments?: string[]         // anonymous comments submitted alongside votes
+  comments?: string[]  // anonymous comments submitted alongside votes
 }
 
 export type RoundResult = {
