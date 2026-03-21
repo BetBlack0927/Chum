@@ -10,7 +10,7 @@ export const PHASE_CONFIG = {
 
 export function getCurrentPhase(now: Date = new Date()): Phase {
   const hour = now.getUTCHours()
-  if (hour < 20) return 'voting'   // ← change 20 to current UTC hour to force results now
+  if (hour < 23) return 'voting'   // ← change 20 to current UTC hour to force results now
   return 'results'
 }
 
