@@ -121,6 +121,7 @@ export default async function GroupDetailPage({ params }: Props) {
                   totalVotes={roundData.totalVotes}
                   allComments={roundData.allComments}
                   revealedVoter={roundData.revealedVoter}
+                  revealedVoterNominee={roundData.revealedVoterNominee}
                   userId={userId}
                   roundId={round.id}
                   groupId={groupId}

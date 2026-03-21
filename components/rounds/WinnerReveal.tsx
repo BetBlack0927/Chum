@@ -9,19 +9,20 @@ import { getAvatarColor, cn } from '@/lib/utils'
 import type { NominationResult, Profile } from '@/types/database'
 
 interface WinnerRevealProps {
-  winner:         NominationResult | null
-  nominations:    NominationResult[]
-  totalVotes:     number
-  allComments:    string[]
-  revealedVoter:  Profile | null
-  userId:         string
-  roundId:        string
-  groupId:        string
-  nextCategory:   string | null
+  winner:                NominationResult | null
+  nominations:           NominationResult[]
+  totalVotes:            number
+  allComments:           { comment: string; nomineeUsername: string }[]
+  revealedVoter:         Profile | null
+  revealedVoterNominee:  Profile | null
+  userId:                string
+  roundId:               string
+  groupId:               string
+  nextCategory:          string | null
 }
 
 export function WinnerReveal({
-  winner, nominations, totalVotes, allComments, revealedVoter,
+  winner, nominations, totalVotes, allComments, revealedVoter, revealedVoterNominee,
   userId, roundId, groupId, nextCategory,
 }: WinnerRevealProps) {
   const [revealed, setRevealed] = useState(false)
@@ -107,7 +108,10 @@ export function WinnerReveal({
                 {isRevealedVoterYou && <span className="text-red-400 text-sm font-normal ml-1">(you)</span>}
               </p>
               <p className="text-red-400/70 text-sm font-medium mt-0.5">
-                This person voted today
+                Voted for{' '}
+                <span className="text-white font-bold">
+                  @{revealedVoterNominee?.username ?? '???'}
+                </span>
               </p>
             </div>
           </div>
@@ -132,7 +136,10 @@ export function WinnerReveal({
           <div className="flex flex-col gap-2">
             {allComments.map((c, i) => (
               <div key={i} className="bg-black/20 rounded-xl border border-white/6 px-4 py-2.5">
-                <p className="text-sm text-white/70 italic leading-snug">&ldquo;{c}&rdquo;</p>
+                <p className="text-xs font-semibold text-white/35 mb-1">
+                  about <span className="text-brand-light/70">@{c.nomineeUsername}</span>
+                </p>
+                <p className="text-sm text-white/70 italic leading-snug">&ldquo;{c.comment}&rdquo;</p>
               </div>
             ))}
           </div>

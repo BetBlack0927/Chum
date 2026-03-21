@@ -221,13 +221,16 @@ export async function getRoundData(roundId: string, userId: string) {
     ? nominations[0]
     : null
 
-  // Collect all comments across all nominations (shown anonymously in results)
+  // Collect all comments with their nominee context (shown anonymously in results)
   const allComments = (votes ?? [])
-    .map((v) => v.comment as string | null)
-    .filter((c): c is string => !!c)
+    .filter((v) => !!v.comment)
+    .map((v) => ({
+      comment:          v.comment as string,
+      nomineeUsername:  (v.nominee as Profile).username,
+    }))
 
   // Pick and persist a revealed voter
-  const revealedVoter = await ensureRevealedVoter(admin, roundId, votes ?? [])
+  const revealed = await ensureRevealedVoter(admin, roundId, votes ?? [])
 
   return {
     nominations,
@@ -235,17 +238,19 @@ export async function getRoundData(roundId: string, userId: string) {
     winner,
     totalVotes: (votes ?? []).length,
     allComments,
-    revealedVoter,
+    revealedVoter:        revealed?.voter ?? null,
+    revealedVoterNominee: revealed?.nominee ?? null,
   }
 }
 
 // Atomically pick one random voter to be publicly revealed for a round.
 // Once set it never changes — same person stays exposed.
+// Returns both the voter's profile and the profile of who they voted for.
 async function ensureRevealedVoter(
   admin: ReturnType<typeof createAdminClient>,
   roundId: string,
-  votes: Array<{ voter_id: string; voter: unknown }>,
-): Promise<Profile | null> {
+  votes: Array<{ voter_id: string; nominated_user_id: string; voter: unknown; nominee: unknown }>,
+): Promise<{ voter: Profile; nominee: Profile } | null> {
   if (votes.length === 0) return null
 
   // Check if already set
@@ -278,9 +283,9 @@ async function ensureRevealedVoter(
     revealedId = updated?.revealed_voter_id ?? revealedId
   }
 
-  // Return the full profile of the revealed voter
   const revealedVote = votes.find((v) => v.voter_id === revealedId)
-  return revealedVote ? (revealedVote.voter as Profile) : null
+  if (!revealedVote) return null
+  return { voter: revealedVote.voter as Profile, nominee: revealedVote.nominee as Profile }
 }
 
 // ─── Group history ────────────────────────────────────────────────────────────
