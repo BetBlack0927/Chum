@@ -120,6 +120,9 @@ export default async function GroupDetailPage({ params }: Props) {
                   nominations={roundData.nominations}
                   totalVotes={roundData.totalVotes}
                   userId={userId}
+                  roundId={round.id}
+                  groupId={groupId}
+                  nextCategory={round.next_category ?? null}
                 />
               </section>
             )}

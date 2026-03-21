@@ -3,31 +3,36 @@
 import { useEffect, useState } from 'react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
-import { getAvatarColor } from '@/lib/utils'
-import { cn } from '@/lib/utils'
+import { CategoryPicker } from '@/components/rounds/CategoryPicker'
+import { CATEGORY_META } from '@/lib/categories'
+import { getAvatarColor, cn } from '@/lib/utils'
 import type { NominationResult } from '@/types/database'
 
 interface WinnerRevealProps {
-  winner:      NominationResult | null
-  nominations: NominationResult[]
-  totalVotes:  number
-  userId:      string
+  winner:        NominationResult | null
+  nominations:   NominationResult[]
+  totalVotes:    number
+  userId:        string
+  roundId:       string
+  groupId:       string
+  nextCategory:  string | null
 }
 
-export function WinnerReveal({ winner, nominations, totalVotes, userId }: WinnerRevealProps) {
+export function WinnerReveal({
+  winner, nominations, totalVotes, userId, roundId, groupId, nextCategory,
+}: WinnerRevealProps) {
   const [revealed, setRevealed] = useState(false)
-
-  useEffect(() => {
-    const t = setTimeout(() => setRevealed(true), 300)
-    return () => clearTimeout(t)
-  }, [])
+  useEffect(() => { const t = setTimeout(() => setRevealed(true), 300); return () => clearTimeout(t) }, [])
 
   const isCurrentUserWinner = winner?.profile.id === userId
+  const categoryLabel = nextCategory
+    ? nextCategory.charAt(0).toUpperCase() + nextCategory.slice(1)
+    : null
 
   return (
     <div className="flex flex-col gap-5 slide-up">
 
-      {/* Winner card */}
+      {/* ── Winner card ── */}
       {winner ? (
         <div className={cn(
           'rounded-3xl border border-gold/30 bg-gold/8 p-5 transition-all duration-700',
@@ -37,9 +42,7 @@ export function WinnerReveal({ winner, nominations, totalVotes, userId }: Winner
             <p className="text-5xl float mb-2">🏆</p>
             <p className="text-xs font-bold text-gold/70 uppercase tracking-widest">Today's Winner</p>
             {isCurrentUserWinner && (
-              <p className="text-sm text-gold font-bold mt-1">
-                The group voted for you! 🎉
-              </p>
+              <p className="text-sm text-gold font-bold mt-1">The group voted for you! 🎉</p>
             )}
           </div>
 
@@ -62,16 +65,12 @@ export function WinnerReveal({ winner, nominations, totalVotes, userId }: Winner
             </div>
           </div>
 
-          {/* Voters */}
           {winner.voter_profiles && winner.voter_profiles.length > 0 && (
             <div className="mt-3">
               <p className="text-xs text-white/30 mb-2">Voted by:</p>
               <div className="flex flex-wrap gap-1.5">
                 {winner.voter_profiles.map((v) => (
-                  <span
-                    key={v.id}
-                    className="inline-flex items-center gap-1 bg-white/6 rounded-full px-2.5 py-1 text-xs text-white/60"
-                  >
+                  <span key={v.id} className="inline-flex items-center gap-1 bg-white/6 rounded-full px-2.5 py-1 text-xs text-white/60">
                     <Avatar username={v.username} color={v.avatar_color || getAvatarColor(v.id)} size="sm" />
                     @{v.username}
                   </span>
@@ -85,24 +84,65 @@ export function WinnerReveal({ winner, nominations, totalVotes, userId }: Winner
           <p className="text-4xl mb-3">🎭</p>
           <p className="font-bold text-white text-lg">No votes yet</p>
           <p className="text-sm text-white/40 mt-1">
-            {totalVotes === 0
-              ? 'Nobody voted today — check back tomorrow!'
-              : 'Not enough votes to crown a winner'}
+            {totalVotes === 0 ? 'Nobody voted today — check back tomorrow!' : 'Not enough votes to crown a winner'}
           </p>
         </Card>
       )}
 
-      {/* Full leaderboard */}
+      {/* ── Category picker / status ── */}
+      {winner && (
+        isCurrentUserWinner ? (
+          // Show picker if winner hasn't chosen yet, otherwise show confirmation
+          nextCategory ? (
+            <div className="rounded-2xl border border-brand/30 bg-brand/10 p-4 text-center">
+                <p className="text-2xl mb-1">{CATEGORY_META[nextCategory]?.emoji ?? '🎯'}</p>
+              <p className="font-bold text-white text-sm">
+                You set tomorrow's category: <span className="text-brand-light">{categoryLabel}</span>
+              </p>
+              <p className="text-xs text-white/30 mt-1">The group will get a {categoryLabel?.toLowerCase()} prompt tomorrow</p>
+            </div>
+          ) : (
+            <CategoryPicker roundId={roundId} groupId={groupId} />
+          )
+        ) : (
+          // Non-winners see the status
+          <div className="rounded-2xl border border-white/8 bg-surface p-4 flex items-center gap-3">
+            {nextCategory ? (
+              <>
+                <span className="text-2xl shrink-0">{CATEGORY_META[nextCategory]?.emoji ?? '🎯'}</span>
+                <div>
+                  <p className="text-sm font-bold text-white">
+                    Tomorrow's category: <span className="text-brand-light">{categoryLabel}</span>
+                  </p>
+                  <p className="text-xs text-white/40">
+                    @{winner.profile.username} chose the next vibe
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="text-2xl shrink-0">👑</span>
+                <div>
+                  <p className="text-sm font-bold text-white">
+                    @{winner.profile.username} is choosing tomorrow's category
+                  </p>
+                  <p className="text-xs text-white/40">Check back soon to see what's next</p>
+                </div>
+              </>
+            )}
+          </div>
+        )
+      )}
+
+      {/* ── Vote breakdown ── */}
       {nominations.length > 0 && (
         <div>
-          <p className="text-xs font-bold text-white/40 uppercase tracking-wide mb-3">
-            Vote Breakdown
-          </p>
+          <p className="text-xs font-bold text-white/40 uppercase tracking-wide mb-3">Vote Breakdown</p>
           <div className="flex flex-col gap-2">
             {nominations.map((n, i) => {
-              const isWinner   = n.profile.id === winner?.profile.id
-              const isYou      = n.profile.id === userId
-              const pct        = totalVotes > 0 ? (n.vote_count / totalVotes) * 100 : 0
+              const isWinner = n.profile.id === winner?.profile.id
+              const isYou    = n.profile.id === userId
+              const pct      = totalVotes > 0 ? (n.vote_count / totalVotes) * 100 : 0
 
               return (
                 <div
@@ -112,9 +152,7 @@ export function WinnerReveal({ winner, nominations, totalVotes, userId }: Winner
                     isWinner ? 'border-gold/30 bg-gold/8' : 'border-white/8 bg-surface',
                   )}
                 >
-                  <span className="text-xs font-bold text-white/30 w-4 shrink-0 text-center">
-                    {i + 1}
-                  </span>
+                  <span className="text-xs font-bold text-white/30 w-4 shrink-0 text-center">{i + 1}</span>
                   <Avatar
                     username={n.profile.username}
                     color={n.profile.avatar_color || getAvatarColor(n.profile.id)}
@@ -132,10 +170,7 @@ export function WinnerReveal({ winner, nominations, totalVotes, userId }: Winner
                     </div>
                     <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
                       <div
-                        className={cn(
-                          'h-full rounded-full transition-all duration-700',
-                          isWinner ? 'bg-gold' : 'bg-white/20'
-                        )}
+                        className={cn('h-full rounded-full transition-all duration-700', isWinner ? 'bg-gold' : 'bg-white/20')}
                         style={{ width: `${pct}%` }}
                       />
                     </div>

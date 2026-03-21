@@ -34,6 +34,7 @@ export type Round = {
   group_id: string
   prompt_id: string
   date: string
+  next_category: string | null  // set by winner during results phase
   created_at: string
 }
 
