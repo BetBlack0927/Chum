@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { TopBar } from '@/components/navigation/TopBar'
 import { Card } from '@/components/ui/Card'
@@ -20,9 +20,9 @@ export default function GroupSettingsPage({ params }: Props) {
   const [isPending, startTransition] = useTransition()
 
   // Unwrap params
-  useState(() => {
+  useEffect(() => {
     params.then((p) => setGroupId(p.id))
-  })
+  }, [params])
 
   function handleLeaveClick() {
     setShowLeaveConfirm(true)

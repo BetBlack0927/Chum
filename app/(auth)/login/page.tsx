@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { Suspense, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { signIn } from '@/lib/actions/auth'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/groups'
   const [error, setError]            = useState<string | null>(null)
@@ -64,5 +64,18 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div>
+        <h2 className="text-xl font-bold text-white mb-1">Welcome back 👋</h2>
+        <p className="text-sm text-white/40 mb-6">Loading...</p>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

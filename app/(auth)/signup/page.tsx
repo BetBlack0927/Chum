@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { Suspense, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { signUp } from '@/lib/actions/auth'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 
-export default function SignupPage() {
+function SignupForm() {
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/groups'
   const [error, setError]            = useState<string | null>(null)
@@ -80,5 +80,18 @@ export default function SignupPage() {
         </Link>
       </p>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div>
+        <h2 className="text-xl font-bold text-white mb-1">Create your account</h2>
+        <p className="text-sm text-white/40 mb-6">Loading...</p>
+      </div>
+    }>
+      <SignupForm />
+    </Suspense>
   )
 }

@@ -37,7 +37,7 @@ export async function createGroup(formData: FormData) {
   // Creator becomes admin member
   const { error: memberError } = await admin
     .from('group_members')
-    .insert({ group_id: group.id, user_id: user.id, role: 'admin' })
+    .insert({ group_id: group.id, user_id: user.id, role: 'admin', join_method: 'creator' })
 
   if (memberError) return { error: memberError.message }
 
@@ -90,7 +90,7 @@ export async function joinGroup(formData: FormData) {
 
   const { error: joinError } = await admin
     .from('group_members')
-    .insert({ group_id: resolvedGroup.id, user_id: user.id, role: 'member' })
+    .insert({ group_id: resolvedGroup.id, user_id: user.id, role: 'member', join_method: 'code' })
 
   if (joinError) return { error: joinError.message }
 
@@ -139,7 +139,7 @@ export async function joinGroupByCode(code: string, userId: string) {
   // Join the group
   const { error: joinError } = await admin
     .from('group_members')
-    .insert({ group_id: group.id, user_id: userId, role: 'member' })
+    .insert({ group_id: group.id, user_id: userId, role: 'member', join_method: 'link' })
 
   if (joinError) {
     return { success: false, error: joinError.message }
