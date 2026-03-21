@@ -3,11 +3,13 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getGroupDetails } from '@/lib/actions/groups'
 import { getOrCreateTodayRound, getRoundData } from '@/lib/actions/rounds'
+import { getPromptLikeInfo } from '@/lib/actions/prompts'
 import { getCurrentPhase, getPhaseClasses } from '@/lib/phases'
 import { TopBar } from '@/components/navigation/TopBar'
 import { PhaseIndicator } from '@/components/rounds/PhaseIndicator'
 import { VotingInterface } from '@/components/rounds/VotingInterface'
 import { WinnerReveal } from '@/components/rounds/WinnerReveal'
+import { PromptLikeButton } from '@/components/rounds/PromptLikeButton'
 import { Card } from '@/components/ui/Card'
 import { AvatarGroup } from '@/components/ui/Avatar'
 import { History, Settings } from 'lucide-react'
@@ -33,6 +35,9 @@ export default async function GroupDetailPage({ params }: Props) {
   const phase = getCurrentPhase()
 
   const roundData = round ? await getRoundData(round.id, userId) : null
+  
+  // Get like info for today's prompt
+  const promptLikeInfo = round ? await getPromptLikeInfo(round.prompt_id) : null
 
   // Flat list of member profiles for the voting UI
   const memberProfiles = members.map((m: any) => m.profiles).filter(Boolean)
@@ -79,9 +84,19 @@ export default async function GroupDetailPage({ params }: Props) {
         {/* Today's prompt */}
         {round ? (
           <div className="rounded-2xl bg-gradient-to-br from-brand/15 to-gold/5 border border-brand/20 p-5">
-            <p className="text-xs font-bold text-brand-light/70 uppercase tracking-widest mb-2">
-              Today's Prompt
-            </p>
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <p className="text-xs font-bold text-brand-light/70 uppercase tracking-widest">
+                Today's Prompt
+              </p>
+              {promptLikeInfo && (
+                <PromptLikeButton
+                  promptId={round.prompt_id}
+                  groupId={groupId}
+                  initialLikeCount={promptLikeInfo.likeCount}
+                  initialUserHasLiked={promptLikeInfo.userHasLiked}
+                />
+              )}
+            </div>
             <p className="text-xl font-black text-white leading-snug">
               {round.prompt.text}
             </p>

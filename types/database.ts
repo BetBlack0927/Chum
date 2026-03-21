@@ -26,6 +26,7 @@ export type Prompt = {
   id: string
   text: string
   category: string | null
+  likes: number
   created_at: string
 }
 
