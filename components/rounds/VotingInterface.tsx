@@ -5,9 +5,11 @@ import { castVote } from '@/lib/actions/votes'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { Crown, CheckCircle } from 'lucide-react'
+import { Crown, CheckCircle, MessageCircle } from 'lucide-react'
 import { cn, getAvatarColor } from '@/lib/utils'
 import type { Profile, Vote } from '@/types/database'
+
+const MAX_COMMENT = 80
 
 interface VotingInterfaceProps {
   roundId:  string
@@ -19,14 +21,14 @@ interface VotingInterfaceProps {
 
 export function VotingInterface({ roundId, groupId, members, userId, userVote }: VotingInterfaceProps) {
   const [selectedId, setSelectedId] = useState<string | null>(userVote?.nominated_user_id ?? null)
+  const [comment, setComment]       = useState('')
   const [hasVoted, setHasVoted]     = useState(!!userVote)
   const [error, setError]           = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  // Others only — can't vote for yourself
   const candidates = members.filter((m) => m.id !== userId)
 
-  // Already voted state
+  // ── Already voted ──────────────────────────────────────────────────────────
   if (hasVoted || userVote) {
     const votedFor = members.find((m) => m.id === (userVote?.nominated_user_id ?? selectedId))
 
@@ -44,12 +46,16 @@ export function VotingInterface({ roundId, groupId, members, userId, userVote }:
                   You voted for <span className="text-white font-semibold">@{votedFor.username}</span>
                 </p>
               )}
+              {(userVote?.comment || comment) && (
+                <p className="text-xs text-white/30 mt-1 italic">
+                  Your comment is saved anonymously 💬
+                </p>
+              )}
               <p className="text-xs text-white/30 mt-1">Results at 8pm UTC</p>
             </div>
           </div>
         </Card>
 
-        {/* Show all candidates greyed out with voted one highlighted */}
         <p className="text-xs font-bold text-white/30 uppercase tracking-wide">All candidates</p>
         <div className="flex flex-col gap-2">
           {members.map((m) => (
@@ -71,7 +77,7 @@ export function VotingInterface({ roundId, groupId, members, userId, userVote }:
       <Card className="text-center py-10">
         <p className="text-4xl mb-3">🙋</p>
         <p className="font-bold text-white text-lg">You're the only one here</p>
-        <p className="text-sm text-white/40 mt-1">Invite friends to your group so you can vote!</p>
+        <p className="text-sm text-white/40 mt-1">Invite friends so you can vote!</p>
       </Card>
     )
   }
@@ -84,6 +90,7 @@ export function VotingInterface({ roundId, groupId, members, userId, userVote }:
       fd.set('round_id', roundId)
       fd.set('group_id', groupId)
       fd.set('nominated_user_id', selectedId!)
+      if (comment.trim()) fd.set('comment', comment.trim())
       const result = await castVote(fd)
       if (result?.error) {
         setError(result.error)
@@ -93,10 +100,13 @@ export function VotingInterface({ roundId, groupId, members, userId, userVote }:
     })
   }
 
+  const selectedMember = candidates.find((m) => m.id === selectedId)
+
   return (
     <div className="flex flex-col gap-3 slide-up">
-      <p className="text-sm text-white/50 text-center">Tap a person to select, then lock in your pick</p>
+      <p className="text-sm text-white/50 text-center">Tap a person, then lock in your pick</p>
 
+      {/* Candidate list */}
       <div className="flex flex-col gap-2">
         {candidates.map((m) => (
           <MemberCard
@@ -105,17 +115,18 @@ export function VotingInterface({ roundId, groupId, members, userId, userVote }:
             isSelected={selectedId === m.id}
             isYou={false}
             disabled={false}
-            onClick={() => setSelectedId(m.id === selectedId ? null : m.id)}
+            onClick={() => {
+              setSelectedId(m.id === selectedId ? null : m.id)
+              setComment('')
+            }}
           />
         ))}
       </div>
 
-      {/* Your own card — greyed out */}
+      {/* Your own card greyed out */}
       {members.find((m) => m.id === userId) && (
         <div className="opacity-40">
-          <p className="text-xs text-white/30 text-center mb-1.5 font-medium">
-            You can't vote for yourself
-          </p>
+          <p className="text-xs text-white/30 text-center mb-1.5">You can't vote for yourself</p>
           <MemberCard
             member={members.find((m) => m.id === userId)!}
             isSelected={false}
@@ -125,20 +136,49 @@ export function VotingInterface({ roundId, groupId, members, userId, userVote }:
         </div>
       )}
 
+      {/* Anonymous comment — appears only when someone is selected */}
+      {selectedMember && (
+        <div className="rounded-2xl border border-white/10 bg-surface-2 p-3 flex flex-col gap-2">
+          <div className="flex items-center gap-1.5 text-white/40">
+            <MessageCircle size={13} />
+            <span className="text-xs font-medium">Add an anonymous comment (optional)</span>
+          </div>
+          <input
+            type="text"
+            value={comment}
+            onChange={(e) => {
+              if (e.target.value.length <= MAX_COMMENT) setComment(e.target.value)
+            }}
+            placeholder={`Why ${selectedMember.username}? 👀`}
+            maxLength={MAX_COMMENT}
+            className="w-full bg-transparent text-sm text-white placeholder:text-white/25 outline-none"
+          />
+          {comment.length > 0 && (
+            <div className="flex justify-between items-center">
+              <p className="text-xs text-white/25 italic">Nobody will know it was you</p>
+              <span className={cn(
+                'text-xs tabular-nums',
+                comment.length > MAX_COMMENT * 0.85 ? 'text-yellow-400' : 'text-white/25'
+              )}>
+                {comment.length}/{MAX_COMMENT}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {error && <p className="text-sm text-red-400 text-center">{error}</p>}
 
-      <div className="pt-1">
-        <Button
-          fullWidth
-          size="lg"
-          onClick={handleVote}
-          loading={isPending}
-          disabled={!selectedId}
-        >
-          <Crown size={18} />
-          Lock In My Vote
-        </Button>
-      </div>
+      <Button
+        fullWidth
+        size="lg"
+        onClick={handleVote}
+        loading={isPending}
+        disabled={!selectedId}
+      >
+        <Crown size={18} />
+        Lock In My Vote
+      </Button>
     </div>
   )
 }

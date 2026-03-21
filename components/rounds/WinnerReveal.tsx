@@ -174,6 +174,16 @@ export function WinnerReveal({
                         style={{ width: `${pct}%` }}
                       />
                     </div>
+                    {/* Anonymous comments for this nominee */}
+                    {n.comments && n.comments.length > 0 && (
+                      <div className="flex flex-col gap-1 mt-2">
+                        {n.comments.map((c, ci) => (
+                          <p key={ci} className="text-xs text-white/45 italic leading-snug">
+                            💬 &ldquo;{c}&rdquo;
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {isWinner && <span className="text-lg shrink-0">🏆</span>}
                 </div>

@@ -204,16 +204,17 @@ export async function getRoundData(roundId: string, userId: string) {
 
   const userVote = (votes ?? []).find((v) => v.voter_id === userId) ?? null
 
-  const countMap: Record<string, { profile: Profile; count: number; voters: Profile[] }> = {}
+  const countMap: Record<string, { profile: Profile; count: number; voters: Profile[]; comments: string[] }> = {}
   for (const v of votes ?? []) {
     const uid = v.nominated_user_id
-    if (!countMap[uid]) countMap[uid] = { profile: v.nominee as Profile, count: 0, voters: [] }
+    if (!countMap[uid]) countMap[uid] = { profile: v.nominee as Profile, count: 0, voters: [], comments: [] }
     countMap[uid].count++
     countMap[uid].voters.push(v.voter as Profile)
+    if (v.comment) countMap[uid].comments.push(v.comment)
   }
 
   const nominations: NominationResult[] = Object.values(countMap)
-    .map((e) => ({ profile: e.profile, vote_count: e.count, voter_profiles: e.voters }))
+    .map((e) => ({ profile: e.profile, vote_count: e.count, voter_profiles: e.voters, comments: e.comments }))
     .sort((a, b) => b.vote_count - a.vote_count)
 
   const winner = nominations.length > 0 && nominations[0].vote_count > 0

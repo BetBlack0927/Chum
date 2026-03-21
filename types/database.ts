@@ -44,6 +44,7 @@ export type Vote = {
   round_id: string
   voter_id: string
   nominated_user_id: string
+  comment: string | null   // optional anonymous comment submitted with the vote
   created_at: string
 }
 
@@ -65,7 +66,8 @@ export type GroupMemberWithProfile = GroupMember & {
 export type NominationResult = {
   profile: Profile
   vote_count: number
-  voter_profiles?: Profile[] // who voted for them (shown in results)
+  voter_profiles?: Profile[]  // who voted for them (shown in results)
+  comments?: string[]         // anonymous comments submitted alongside votes
 }
 
 export type RoundResult = {
