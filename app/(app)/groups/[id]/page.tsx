@@ -10,7 +10,7 @@ import { VotingInterface } from '@/components/rounds/VotingInterface'
 import { WinnerReveal } from '@/components/rounds/WinnerReveal'
 import { Card } from '@/components/ui/Card'
 import { AvatarGroup } from '@/components/ui/Avatar'
-import { History } from 'lucide-react'
+import { History, Settings } from 'lucide-react'
 import { InviteCodeButton } from './InviteCodeButton'
 
 interface Props {
@@ -43,12 +43,20 @@ export default async function GroupDetailPage({ params }: Props) {
         title={group.name}
         backHref="/groups"
         right={
-          <Link
-            href={`/groups/${groupId}/history`}
-            className="flex items-center justify-center w-9 h-9 rounded-xl bg-surface hover:bg-surface-2 transition-colors text-white/60 hover:text-white"
-          >
-            <History size={17} />
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link
+              href={`/groups/${groupId}/history`}
+              className="flex items-center justify-center w-9 h-9 rounded-xl bg-surface hover:bg-surface-2 transition-colors text-white/60 hover:text-white"
+            >
+              <History size={17} />
+            </Link>
+            <Link
+              href={`/groups/${groupId}/settings`}
+              className="flex items-center justify-center w-9 h-9 rounded-xl bg-surface hover:bg-surface-2 transition-colors text-white/60 hover:text-white"
+            >
+              <Settings size={17} />
+            </Link>
+          </div>
         }
       />
 

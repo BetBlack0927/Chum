@@ -5,9 +5,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function signUp(formData: FormData) {
-  const email    = (formData.get('email')    as string).trim()
-  const password = formData.get('password')  as string
-  const username = (formData.get('username') as string).trim()
+  const email      = (formData.get('email')      as string).trim()
+  const password   = formData.get('password')    as string
+  const username   = (formData.get('username')   as string).trim()
+  const redirectTo = (formData.get('redirectTo') as string) || '/groups'
 
   if (!email || !password || !username) {
     return { error: 'All fields are required.' }
@@ -57,12 +58,13 @@ export async function signUp(formData: FormData) {
     })
     .select()
 
-  redirect('/groups')
+  redirect(redirectTo)
 }
 
 export async function signIn(formData: FormData) {
-  const email    = (formData.get('email')    as string).trim()
-  const password = formData.get('password')  as string
+  const email      = (formData.get('email')      as string).trim()
+  const password   = formData.get('password')    as string
+  const redirectTo = (formData.get('redirectTo') as string) || '/groups'
 
   if (!email || !password) {
     return { error: 'Email and password are required.' }
@@ -74,7 +76,7 @@ export async function signIn(formData: FormData) {
 
   if (error) return { error: 'Invalid email or password.' }
 
-  redirect('/groups')
+  redirect(redirectTo)
 }
 
 export async function signOut() {

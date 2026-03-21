@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, Link2 } from 'lucide-react'
 
 export function InviteCodeButton({ code }: { code: string }) {
   const [copied, setCopied] = useState(false)
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(code)
+    const inviteUrl = `${window.location.origin}/join/${code}`
+    await navigator.clipboard.writeText(inviteUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -24,7 +25,7 @@ export function InviteCodeButton({ code }: { code: string }) {
         </>
       ) : (
         <>
-          <Copy size={12} />
+          <Link2 size={12} />
           {code}
         </>
       )}

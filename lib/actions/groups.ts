@@ -98,6 +98,117 @@ export async function joinGroup(formData: FormData) {
   redirect(`/groups/${resolvedGroup.id}`)
 }
 
+export async function joinGroupByCode(code: string, userId: string) {
+  const inviteCode = code.trim().toUpperCase()
+  
+  if (!inviteCode) {
+    return { success: false, error: 'Please provide an invite code.' }
+  }
+
+  const admin = createAdminClient()
+
+  // Find group by invite code
+  const { data: group, error: groupError } = await admin
+    .from('groups')
+    .select('id, name')
+    .eq('invite_code', inviteCode)
+    .maybeSingle()
+
+  if (!group) {
+    return { success: false, error: 'Invalid invite code. Please check and try again.' }
+  }
+
+  // Check if already a member
+  const { data: existing } = await admin
+    .from('group_members')
+    .select('id')
+    .eq('group_id', group.id)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (existing) {
+    // Already a member - still considered success
+    return { 
+      success: true, 
+      groupId: group.id, 
+      groupName: group.name,
+      alreadyMember: true 
+    }
+  }
+
+  // Join the group
+  const { error: joinError } = await admin
+    .from('group_members')
+    .insert({ group_id: group.id, user_id: userId, role: 'member' })
+
+  if (joinError) {
+    return { success: false, error: joinError.message }
+  }
+
+  revalidatePath('/groups')
+  
+  return { 
+    success: true, 
+    groupId: group.id, 
+    groupName: group.name,
+    alreadyMember: false 
+  }
+}
+
+export async function leaveGroup(groupId: string, userId: string) {
+  const admin = createAdminClient()
+
+  // Check if user is a member
+  const { data: membership } = await admin
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (!membership) {
+    return { success: false, error: 'You are not a member of this group.' }
+  }
+
+  // Check if user is the last admin
+  const { data: admins } = await admin
+    .from('group_members')
+    .select('user_id')
+    .eq('group_id', groupId)
+    .eq('role', 'admin')
+
+  if (admins && admins.length === 1 && admins[0].user_id === userId) {
+    // Check if there are other members
+    const { data: allMembers } = await admin
+      .from('group_members')
+      .select('user_id')
+      .eq('group_id', groupId)
+
+    if (allMembers && allMembers.length > 1) {
+      return { 
+        success: false, 
+        error: 'You are the only admin. Please promote another member to admin before leaving.' 
+      }
+    }
+  }
+
+  // Remove the user from the group
+  const { error: deleteError } = await admin
+    .from('group_members')
+    .delete()
+    .eq('group_id', groupId)
+    .eq('user_id', userId)
+
+  if (deleteError) {
+    return { success: false, error: deleteError.message }
+  }
+
+  revalidatePath('/groups')
+  revalidatePath(`/groups/${groupId}`)
+
+  return { success: true }
+}
+
 export async function getUserGroups() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

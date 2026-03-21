@@ -2,16 +2,20 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { signUp } from '@/lib/actions/auth'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 
 export default function SignupPage() {
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') || '/groups'
   const [error, setError]            = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   function handleSubmit(formData: FormData) {
     setError(null)
+    formData.append('redirectTo', redirectTo)
     startTransition(async () => {
       const result = await signUp(formData)
       if (result?.error) setError(result.error)
@@ -71,7 +75,7 @@ export default function SignupPage() {
 
       <p className="text-center text-sm text-white/40 mt-4">
         Already have an account?{' '}
-        <Link href="/login" className="text-brand-light font-semibold hover:underline">
+        <Link href={`/login${redirectTo !== '/groups' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`} className="text-brand-light font-semibold hover:underline">
           Log in
         </Link>
       </p>
