@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 
 export default function LandingPage() {
@@ -5,10 +6,7 @@ export default function LandingPage() {
     <div className="min-h-dvh bg-app-bg text-white flex flex-col">
       {/* Nav */}
       <nav className="flex items-center justify-between px-5 py-4 max-w-[430px] mx-auto w-full">
-        <span className="font-black text-xl tracking-tight">
-          <span className="gradient-text">Daily</span>
-          <span className="text-white"> Winner</span>
-        </span>
+        <Image src="/logo.png" alt="Daily Winner" width={40} height={40} className="rounded-xl" />
         <Link
           href="/login"
           className="text-sm font-semibold text-white/60 hover:text-white transition-colors"
@@ -19,8 +17,8 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="flex-1 flex flex-col items-center justify-center px-6 pt-8 pb-16 max-w-[430px] mx-auto w-full text-center">
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand to-gold flex items-center justify-center text-4xl mb-6 shadow-2xl shadow-brand/30">
-          🏆
+        <div className="mb-6 drop-shadow-2xl">
+          <Image src="/logo.png" alt="Daily Winner" width={96} height={96} className="rounded-3xl shadow-2xl shadow-brand/30" />
         </div>
 
         <h1 className="text-4xl font-black leading-tight tracking-tight mb-4">

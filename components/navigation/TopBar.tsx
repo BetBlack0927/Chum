@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
@@ -14,13 +15,15 @@ export function TopBar({ title, backHref, right }: TopBarProps) {
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="flex items-center h-14 px-4 gap-3 max-w-[430px] mx-auto">
-        {backHref && (
+        {backHref ? (
           <Link
             href={backHref}
             className="flex items-center justify-center w-9 h-9 rounded-xl bg-surface hover:bg-surface-2 transition-colors text-white/70 hover:text-white shrink-0"
           >
             <ArrowLeft size={18} />
           </Link>
+        ) : (
+          <Image src="/logo.png" alt="Daily Winner" width={30} height={30} className="rounded-lg shrink-0" />
         )}
 
         {title && (

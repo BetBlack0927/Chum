@@ -175,12 +175,22 @@ export function ShareResult({
           </div>
 
           {/* Branding */}
-          <p style={{
-            fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.18)',
-            margin: 0, letterSpacing: '0.16em', textTransform: 'uppercase', zIndex: 1,
-          }}>
-            Daily Winner
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, zIndex: 1 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="Daily Winner"
+              width={20}
+              height={20}
+              style={{ borderRadius: 5, opacity: 0.55 }}
+            />
+            <p style={{
+              fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.25)',
+              margin: 0, letterSpacing: '0.14em', textTransform: 'uppercase',
+            }}>
+              Daily Winner
+            </p>
+          </div>
         </div>
       </div>
 

@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: 'Daily Winner',
   description: 'The game your friend group actually plays every day. Daily prompts, honest answers, one winner.',
   keywords: ['daily game', 'friend group', 'social app', 'daily winner'],
+  icons: {
+    icon:  '/logo.png',
+    apple: '/logo.png',
+  },
 }
 
 export const viewport: Viewport = {
