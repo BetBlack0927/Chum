@@ -116,6 +116,7 @@ export default async function GroupDetailPage({ params }: Props) {
             {phase === 'results' && (
               <section>
                 <WinnerReveal
+                  promptText={round.prompt.text}
                   winner={roundData.winner}
                   nominations={roundData.nominations}
                   totalVotes={roundData.totalVotes}
