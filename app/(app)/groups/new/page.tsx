@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { createGroup, joinGroup } from '@/lib/actions/groups'
+import { CATEGORY_META, VALID_CATEGORIES } from '@/lib/categories'
 import { Users, Link2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -71,8 +72,32 @@ function TabButton({
 function CreateGroupForm() {
   const [error, setError]            = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
+    new Set(VALID_CATEGORIES.filter(c => c !== 'random'))
+  )
+
+  function toggleCategory(category: string) {
+    const newSet = new Set(selectedCategories)
+    if (newSet.has(category)) {
+      newSet.delete(category)
+    } else {
+      newSet.add(category)
+    }
+    setSelectedCategories(newSet)
+  }
 
   function handleSubmit(formData: FormData) {
+    // Validate at least one category selected
+    if (selectedCategories.size === 0) {
+      setError('Please select at least one prompt category.')
+      return
+    }
+
+    // Add selected categories to form data
+    selectedCategories.forEach(cat => {
+      formData.append('categories', cat)
+    })
+
     setError(null)
     startTransition(async () => {
       const result = await createGroup(formData)
@@ -102,6 +127,48 @@ function CreateGroupForm() {
           placeholder="What's this group about?"
           maxLength={100}
         />
+
+        {/* Prompt Categories */}
+        <div>
+          <label className="block text-sm font-semibold text-white mb-2">
+            Prompt Categories
+          </label>
+          <p className="text-xs text-white/40 mb-3">
+            Choose which types of prompts you want in your daily rounds
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {VALID_CATEGORIES.filter(cat => cat !== 'random').map(category => {
+              const meta = CATEGORY_META[category]
+              const isSelected = selectedCategories.has(category)
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => toggleCategory(category)}
+                  className={cn(
+                    'flex items-center gap-2 p-3 rounded-xl border text-left transition-all active:scale-95',
+                    isSelected
+                      ? 'bg-brand/20 border-brand/40 text-white'
+                      : 'bg-surface border-white/10 text-white/60 hover:border-white/20'
+                  )}
+                >
+                  <span className="text-xl shrink-0">{meta.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">{meta.label}</div>
+                    <div className="text-xs opacity-70">{meta.desc}</div>
+                  </div>
+                  {isSelected && (
+                    <div className="w-4 h-4 rounded-full bg-brand flex items-center justify-center shrink-0">
+                      <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
 
         {error && (
           <div className="rounded-xl bg-red-400/10 border border-red-400/30 px-4 py-3 text-sm text-red-400">

@@ -4,16 +4,29 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { VALID_CATEGORIES } from '@/lib/categories'
 
 export async function createGroup(formData: FormData) {
   const name        = (formData.get('name')        as string).trim()
   const description = (formData.get('description') as string | null)?.trim() || null
+  const categories  = formData.getAll('categories') as string[]
 
   if (!name || name.length < 2) {
     return { error: 'Group name must be at least 2 characters.' }
   }
   if (name.length > 40) {
     return { error: 'Group name must be 40 characters or fewer.' }
+  }
+
+  // Validate categories
+  if (categories.length === 0) {
+    return { error: 'Please select at least one prompt category.' }
+  }
+  const validCategories = categories.filter(c => 
+    VALID_CATEGORIES.includes(c as any) && c !== 'random'
+  )
+  if (validCategories.length === 0) {
+    return { error: 'Invalid categories selected.' }
   }
 
   // Verify the user is authenticated
@@ -40,6 +53,21 @@ export async function createGroup(formData: FormData) {
     .insert({ group_id: group.id, user_id: user.id, role: 'admin', join_method: 'creator' })
 
   if (memberError) return { error: memberError.message }
+
+  // Save enabled categories
+  const categoryInserts = validCategories.map(cat => ({
+    group_id: group.id,
+    category: cat
+  }))
+  
+  const { error: categoriesError } = await admin
+    .from('group_categories')
+    .insert(categoryInserts)
+
+  if (categoriesError) {
+    // Non-fatal - log but don't block group creation
+    console.error('Failed to save group categories:', categoriesError)
+  }
 
   revalidatePath('/groups')
   redirect(`/groups/${group.id}`)

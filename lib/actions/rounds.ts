@@ -65,6 +65,17 @@ async function pickPromptForGroup(
   groupId: string,
   preferredCategory: string | null,
 ): Promise<string | null> {
+  // Get enabled categories for this group
+  const { data: enabledCategoriesData } = await admin
+    .from('group_categories')
+    .select('category')
+    .eq('group_id', groupId)
+
+  // If no rows exist, all categories are available (backward compatibility)
+  const enabledCategories = enabledCategoriesData && enabledCategoriesData.length > 0
+    ? new Set(enabledCategoriesData.map(row => row.category))
+    : null
+
   // Prompts used in the last 60 days in this group (don't repeat)
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - 60)
@@ -104,33 +115,52 @@ async function pickPromptForGroup(
   }
 
   // Fetch candidate prompts
-  const { data: allPrompts } = await admin.from('prompts').select('id, category')
-  if (!allPrompts || allPrompts.length === 0) return null
+  const { data: allPrompts, error: promptsError } = await admin.from('prompts').select('id, category')
+  
+  if (promptsError) {
+    console.error('Error fetching prompts:', promptsError)
+    return null
+  }
+  
+  if (!allPrompts || allPrompts.length === 0) {
+    console.error('No prompts found in database. Have you run seed.sql?')
+    return null
+  }
+
+  // Filter prompts by enabled categories (if specified)
+  const availablePrompts = enabledCategories
+    ? allPrompts.filter(p => p.category && enabledCategories.has(p.category))
+    : allPrompts
+
+  if (availablePrompts.length === 0) {
+    console.error(`No prompts available after filtering. Enabled categories: ${enabledCategories ? Array.from(enabledCategories).join(', ') : 'all'}, Total prompts: ${allPrompts.length}`)
+    return null
+  }
 
   // Priority 1: preferred category, not recently used
   if (useCategory) {
-    const fresh = allPrompts.filter(
+    const fresh = availablePrompts.filter(
       (p) => p.category === useCategory && !recentIds.has(p.id)
     )
     if (fresh.length > 0) return fresh[Math.floor(Math.random() * fresh.length)].id
 
     // Fall back to any prompt in that category (even if recently used)
-    const any = allPrompts.filter((p) => p.category === useCategory)
+    const any = availablePrompts.filter((p) => p.category === useCategory)
     if (any.length > 0) return any[Math.floor(Math.random() * any.length)].id
   }
 
   // Priority 2: unused prompts, avoiding blocked category
-  const freshAny = allPrompts.filter(
+  const freshAny = availablePrompts.filter(
     (p) => !recentIds.has(p.id) && p.category !== blockedCategory
   )
   if (freshAny.length > 0) return freshAny[Math.floor(Math.random() * freshAny.length)].id
 
   // Priority 3: any unused prompt (ignore blocked category)
-  const anyFresh = allPrompts.filter((p) => !recentIds.has(p.id))
+  const anyFresh = availablePrompts.filter((p) => !recentIds.has(p.id))
   if (anyFresh.length > 0) return anyFresh[Math.floor(Math.random() * anyFresh.length)].id
 
   // Fallback: pick anything (all prompts have been used recently)
-  return allPrompts[Math.floor(Math.random() * allPrompts.length)].id
+  return availablePrompts[Math.floor(Math.random() * availablePrompts.length)].id
 }
 
 // ─── Winner chooses next category ────────────────────────────────────────────
