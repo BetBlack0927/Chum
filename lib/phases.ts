@@ -4,13 +4,13 @@ export type Phase = 'voting' | 'results'
 // Voting:  midnight (0:00) → 8pm (20:00)  — vote for who fits the prompt
 // Results: 8pm    (20:00) → midnight       — see who won
 export const PHASE_CONFIG = {
-  voting:  { startHour: 0,  endHour: 20, label: 'Voting',  emoji: '🗳️', color: 'yellow' as const },
-  results: { startHour: 20, endHour: 24, label: 'Results', emoji: '🏆', color: 'green'  as const },
+  voting:  { startHour: 0,  endHour: 23, label: 'Voting',  emoji: '🗳️', color: 'yellow' as const },
+  results: { startHour: 23, endHour: 24, label: 'Results', emoji: '🏆', color: 'green'  as const },
 } as const
 
 export function getCurrentPhase(now: Date = new Date()): Phase {
   const hour = now.getUTCHours()
-  if (hour < 14) return 'voting'   // ← change 20 to current UTC hour to force results now
+  if (hour < 23) return 'voting'   // ← change 20 to current UTC hour to force results now
   return 'results'
 }
 
