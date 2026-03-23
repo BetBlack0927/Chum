@@ -97,12 +97,15 @@ export function RerollButton({ roundId, groupId, isAdmin, hasRerolled, hasVotes 
 
   // idle
   return (
-    <button
-      onClick={() => setState({ kind: 'confirm' })}
-      className="flex items-center justify-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors mx-auto group"
-    >
-      <span className="group-hover:rotate-180 transition-transform duration-300 inline-block">🎲</span>
-      Reroll Prompt
-    </button>
+    <div className="flex flex-col items-center gap-1.5">
+      <button
+        onClick={() => setState({ kind: 'confirm' })}
+        className="flex items-center justify-center gap-2 h-10 px-5 rounded-2xl border border-white/15 bg-white/6 text-white/70 font-semibold text-sm hover:bg-white/10 hover:border-white/25 hover:text-white active:scale-95 transition-all group w-full"
+      >
+        <span className="group-hover:rotate-180 transition-transform duration-300 inline-block text-base">🎲</span>
+        Reroll Prompt
+      </button>
+      <p className="text-[11px] text-white/25">1 reroll available per day</p>
+    </div>
   )
 }
