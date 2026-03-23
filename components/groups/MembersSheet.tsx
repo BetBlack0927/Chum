@@ -62,40 +62,42 @@ export function MembersSheet({ groupId, members, currentUserId, isAdmin }: Membe
         </span>
       </button>
 
-      {/* Bottom sheet */}
+      {/* Bottom sheet — z-[60] sits above the bottom nav (z-50) */}
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center"
+          className="fixed inset-0 z-[60] flex items-end justify-center"
           onClick={() => setOpen(false)}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
 
-          {/* Sheet */}
+          {/* Sheet: takes up to 75% of the viewport, flex column so list scrolls */}
           <div
             className="relative w-full max-w-[430px] bg-surface rounded-t-3xl border-t border-white/10 flex flex-col animate-in slide-in-from-bottom duration-300"
-            style={{ maxHeight: '80dvh', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+            style={{ height: '75dvh' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle bar */}
-            <div className="w-10 h-1 rounded-full bg-white/15 mx-auto mt-3 mb-1 shrink-0" />
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-3 shrink-0" />
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 shrink-0">
+            {/* Header — fixed inside sheet */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 shrink-0 border-b border-white/6">
               <div>
                 <p className="font-bold text-white text-lg">Members</p>
                 <p className="text-xs text-white/35 mt-0.5">{members.length} people in this group</p>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/8 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 transition-colors"
+                className="w-9 h-9 rounded-full bg-white/8 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 transition-colors"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             </div>
 
-            {/* Scrollable member list */}
-            <div className="flex flex-col gap-2 overflow-y-auto px-5 pt-1">
+            {/* Scrollable member list — flex-1 fills remaining height */}
+            <div className="flex-1 overflow-y-auto px-5 py-3 flex flex-col gap-2"
+              style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+            >
               {members.map((member) => (
                 <MemberRow
                   key={member.id}
