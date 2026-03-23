@@ -238,6 +238,40 @@ export async function leaveGroup(groupId: string, userId: string) {
   return { success: true }
 }
 
+// ─── Update group avatar (admin only) ────────────────────────────────────────
+
+export async function updateGroupAvatarUrl(groupId: string, url: string | null) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+
+  const admin = createAdminClient()
+
+  // Verify the caller is an admin of this group
+  const { data: membership } = await admin
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!membership || membership.role !== 'admin') {
+    return { error: 'Only group admins can change the group photo.' }
+  }
+
+  const { error } = await admin
+    .from('groups')
+    .update({ avatar_url: url })
+    .eq('id', groupId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/groups')
+  revalidatePath(`/groups/${groupId}`)
+  revalidatePath(`/groups/${groupId}/settings`)
+  return { success: true }
+}
+
 export async function getUserGroups() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -255,7 +289,7 @@ export async function getUserGroups() {
           role,
           joined_at,
           groups (
-            id, name, description, invite_code, created_at
+            id, name, description, invite_code, avatar_url, created_at
           )
         `)
         .eq('user_id', userId)

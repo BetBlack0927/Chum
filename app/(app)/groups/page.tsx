@@ -91,8 +91,15 @@ function GroupCard({ group, currentPhase }: { group: any; currentPhase: ReturnTy
       className="flex items-center gap-4 bg-surface rounded-2xl border border-white/8 p-4 hover:border-white/14 hover:bg-surface-2 transition-all active:scale-[0.98]"
     >
       {/* Group avatar */}
-      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand/30 to-gold/20 flex items-center justify-center text-xl shrink-0 border border-white/8">
-        {group.name.charAt(0).toUpperCase()}
+      <div className="w-12 h-12 rounded-xl shrink-0 overflow-hidden border border-white/8">
+        {group.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={group.avatar_url} alt={group.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-brand/30 to-gold/20 flex items-center justify-center text-xl font-black text-white">
+            {group.name.charAt(0).toUpperCase()}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 min-w-0">

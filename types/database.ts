@@ -12,6 +12,7 @@ export type Group = {
   description: string | null
   invite_code: string
   created_by: string | null
+  avatar_url: string | null
   created_at: string
 }
 
