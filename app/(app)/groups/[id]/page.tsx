@@ -10,6 +10,7 @@ import { PhaseIndicator } from '@/components/rounds/PhaseIndicator'
 import { VotingInterface } from '@/components/rounds/VotingInterface'
 import { WinnerReveal } from '@/components/rounds/WinnerReveal'
 import { PromptLikeButton } from '@/components/rounds/PromptLikeButton'
+import { RerollButton } from '@/components/rounds/RerollButton'
 import { Card } from '@/components/ui/Card'
 import { AvatarGroup } from '@/components/ui/Avatar'
 import { History, Settings } from 'lucide-react'
@@ -34,7 +35,8 @@ export default async function GroupDetailPage({ params }: Props) {
   
   if (!details) notFound()
 
-  const { group, members, userId } = details
+  const { group, members, userId, userRole } = details
+  const isAdmin = userRole === 'admin'
   const phase = getCurrentPhase()
 
   // Parallelize round-dependent queries
@@ -113,6 +115,17 @@ export default async function GroupDetailPage({ params }: Props) {
               No prompt available — make sure you've run the seed SQL.
             </p>
           </Card>
+        )}
+
+        {/* Reroll (admin only, voting phase, before any votes) */}
+        {round && phase === 'voting' && (
+          <RerollButton
+            roundId={round.id}
+            groupId={groupId}
+            isAdmin={isAdmin}
+            hasRerolled={round.prompt_rerolled ?? false}
+            hasVotes={(roundData?.totalVotes ?? 0) > 0}
+          />
         )}
 
         {/* Phase indicator */}

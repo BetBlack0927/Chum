@@ -223,6 +223,70 @@ export async function chooseNextCategory(formData: FormData) {
   return { success: true }
 }
 
+// ─── Admin: reroll today's prompt ────────────────────────────────────────────
+
+export async function rerollPrompt(roundId: string, groupId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+
+  const admin = createAdminClient()
+
+  // Verify caller is an admin of this group
+  const { data: membership } = await admin
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!membership || membership.role !== 'admin') {
+    return { error: 'Only the group admin can reroll the prompt.' }
+  }
+
+  // Fetch the current round
+  const { data: round } = await admin
+    .from('rounds')
+    .select('*, prompt:prompts(*)')
+    .eq('id', roundId)
+    .single()
+
+  if (!round) return { error: 'Round not found.' }
+
+  if (round.prompt_rerolled) {
+    return { error: 'You already used today\'s reroll.' }
+  }
+
+  // Block reroll once any votes exist
+  const { count: voteCount } = await admin
+    .from('votes')
+    .select('id', { count: 'exact', head: true })
+    .eq('round_id', roundId)
+
+  if ((voteCount ?? 0) > 0) {
+    return { error: 'Can\'t reroll after voting has started.' }
+  }
+
+  // Pick a new prompt — reuse existing logic.
+  // The current prompt is in recentIds (it's in today's round) so it will be skipped.
+  const currentCategory = (round.prompt as any)?.category ?? null
+  const newPromptId = await pickPromptForGroup(admin, groupId, currentCategory)
+
+  if (!newPromptId) {
+    return { error: 'No alternative prompts available right now.' }
+  }
+
+  const { error: updateError } = await admin
+    .from('rounds')
+    .update({ prompt_id: newPromptId, prompt_rerolled: true })
+    .eq('id', roundId)
+
+  if (updateError) return { error: updateError.message }
+
+  revalidatePath(`/groups/${groupId}`)
+  return { success: true }
+}
+
 // ─── Round data (nominations tally) ──────────────────────────────────────────
 
 export async function getRoundData(roundId: string, userId: string) {

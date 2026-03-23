@@ -37,6 +37,7 @@ export type Round = {
   date: string
   next_category: string | null     // set by winner during results phase
   revealed_voter_id: string | null // one randomly-exposed voter per round
+  prompt_rerolled: boolean         // admin has used their one daily reroll
   created_at: string
 }
 
