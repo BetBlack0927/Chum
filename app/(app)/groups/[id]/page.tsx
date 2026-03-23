@@ -78,7 +78,7 @@ export default async function GroupDetailPage({ params }: Props) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AvatarGroup
-              users={memberProfiles.map((p: any) => ({ username: p.username, avatar_color: p.avatar_color }))}
+              users={memberProfiles.map((p: any) => ({ username: p.username, avatar_color: p.avatar_color, avatar_url: p.avatar_url }))}
               max={5}
               size="sm"
             />
