@@ -36,12 +36,12 @@ export function MembersSheet({ groupId, members, currentUserId, isAdmin }: Membe
       {/* Trigger */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 group"
+        className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-2xl border border-white/10 bg-white/4 hover:bg-white/8 hover:border-white/20 active:scale-95 transition-all group"
         aria-label="View members"
       >
         {/* Mini avatar stack */}
         <div className="flex items-center">
-          {members.slice(0, 5).map((m, i) => (
+          {members.slice(0, 5).map((m) => (
             <div key={m.id} className="-ml-1.5 first:ml-0 ring-2 ring-app-bg rounded-full">
               <Avatar
                 username={m.username}
@@ -57,7 +57,7 @@ export function MembersSheet({ groupId, members, currentUserId, isAdmin }: Membe
             </div>
           )}
         </div>
-        <span className="text-xs text-white/40 group-hover:text-white/60 transition-colors">
+        <span className="text-xs text-white/60 font-medium group-hover:text-white transition-colors">
           {members.length} member{members.length !== 1 ? 's' : ''}
         </span>
       </button>
@@ -73,13 +73,16 @@ export function MembersSheet({ groupId, members, currentUserId, isAdmin }: Membe
 
           {/* Sheet */}
           <div
-            className="relative w-full max-w-[430px] bg-surface rounded-t-3xl border-t border-white/10 p-5 pb-8 animate-in slide-in-from-bottom duration-300"
+            className="relative w-full max-w-[430px] bg-surface rounded-t-3xl border-t border-white/10 flex flex-col animate-in slide-in-from-bottom duration-300"
+            style={{ maxHeight: '80dvh', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Handle + header */}
-            <div className="flex items-center justify-between mb-5">
+            {/* Handle bar */}
+            <div className="w-10 h-1 rounded-full bg-white/15 mx-auto mt-3 mb-1 shrink-0" />
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3 shrink-0">
               <div>
-                <div className="w-10 h-1 rounded-full bg-white/15 mx-auto mb-4" />
                 <p className="font-bold text-white text-lg">Members</p>
                 <p className="text-xs text-white/35 mt-0.5">{members.length} people in this group</p>
               </div>
@@ -91,7 +94,8 @@ export function MembersSheet({ groupId, members, currentUserId, isAdmin }: Membe
               </button>
             </div>
 
-            <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
+            {/* Scrollable member list */}
+            <div className="flex flex-col gap-2 overflow-y-auto px-5 pt-1">
               {members.map((member) => (
                 <MemberRow
                   key={member.id}
