@@ -297,10 +297,10 @@ export async function getRoundData(roundId: string, userId: string) {
 
       // Parallelize independent queries for better performance
       const [votesBasic, userVoteData, revealedVoterId] = await Promise.all([
-        // Get all votes with nominee profiles only (no need for voter profiles in most queries)
+        // Get all votes with nominee profiles and voter_id for participation tracking
         admin
           .from('votes')
-          .select('nominated_user_id, comment, profiles!nominated_user_id(id, username, avatar_color, created_at)')
+          .select('voter_id, nominated_user_id, comment, profiles!nominated_user_id(id, username, avatar_color, created_at)')
           .eq('round_id', roundId),
         
         // Get user's specific vote separately
@@ -381,6 +381,7 @@ export async function getRoundData(roundId: string, userId: string) {
         allComments,
         revealedVoter,
         revealedVoterNominee,
+        voterIds: votes.map((v: any) => v.voter_id as string),
       }
     },
     [`round-data-${roundId}-${userId}`],

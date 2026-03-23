@@ -82,6 +82,7 @@ export default async function GroupDetailPage({ params }: Props) {
             }))}
             currentUserId={userId}
             isAdmin={isAdmin}
+            votedUserIds={roundData ? roundData.voterIds : undefined}
           />
           <InviteCodeButton code={group.invite_code} />
         </div>

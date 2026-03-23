@@ -16,13 +16,14 @@ interface Member {
 }
 
 interface MembersSheetProps {
-  groupId:    string
-  members:    Member[]
+  groupId:       string
+  members:       Member[]
   currentUserId: string
-  isAdmin:    boolean
+  isAdmin:       boolean
+  votedUserIds?: string[]
 }
 
-export function MembersSheet({ groupId, members, currentUserId, isAdmin }: MembersSheetProps) {
+export function MembersSheet({ groupId, members, currentUserId, isAdmin, votedUserIds }: MembersSheetProps) {
   const [open, setOpen] = useState(false)
 
   const avatarUsers = members.map((m) => ({
@@ -105,6 +106,8 @@ export function MembersSheet({ groupId, members, currentUserId, isAdmin }: Membe
                   groupId={groupId}
                   currentUserId={currentUserId}
                   isAdmin={isAdmin}
+                  hasVoted={votedUserIds?.includes(member.id) ?? false}
+                  showVoteStatus={votedUserIds !== undefined}
                   onKicked={() => setOpen(false)}
                 />
               ))}
@@ -117,12 +120,14 @@ export function MembersSheet({ groupId, members, currentUserId, isAdmin }: Membe
 }
 
 function MemberRow({
-  member, groupId, currentUserId, isAdmin, onKicked,
+  member, groupId, currentUserId, isAdmin, hasVoted, showVoteStatus, onKicked,
 }: {
   member: Member
   groupId: string
   currentUserId: string
   isAdmin: boolean
+  hasVoted: boolean
+  showVoteStatus: boolean
   onKicked: () => void
 }) {
   const router = useRouter()
@@ -169,12 +174,25 @@ function MemberRow({
             <ShieldCheck size={13} className="text-gold shrink-0" />
           )}
         </div>
-        <p className={cn(
-          'text-xs mt-0.5',
-          member.role === 'admin' ? 'text-gold/60 font-medium' : 'text-white/30',
-        )}>
-          {member.role === 'admin' ? '👑 Admin' : 'Member'}
-        </p>
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          <span className={cn(
+            'text-xs',
+            member.role === 'admin' ? 'text-gold/60 font-medium' : 'text-white/30',
+          )}>
+            {member.role === 'admin' ? '👑 Admin' : 'Member'}
+          </span>
+          {showVoteStatus && (
+            <>
+              <span className="text-white/15 text-xs">·</span>
+              <span className={cn(
+                'text-xs font-medium',
+                hasVoted ? 'text-emerald-400/80' : 'text-white/25',
+              )}>
+                {hasVoted ? '✓ Voted today' : 'Hasn\'t voted yet'}
+              </span>
+            </>
+          )}
+        </div>
         {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
       </div>
 

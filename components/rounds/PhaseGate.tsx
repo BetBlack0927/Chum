@@ -16,6 +16,7 @@ interface RoundData {
   allComments:          { comment: string; nomineeUsername: string }[]
   revealedVoter:        Profile | null
   revealedVoterNominee: Profile | null
+  voterIds:             string[]
 }
 
 interface PhaseGateProps {
