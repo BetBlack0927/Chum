@@ -2,9 +2,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getUserGroups, getGroupStreaks } from '@/lib/actions/groups'
-import { getCurrentPhase, getPhaseClasses, getPhaseEmoji, getPhaseLabel } from '@/lib/phases'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
+import { PhasePill } from '@/components/ui/PhasePill'
 import { Users, Plus, Trophy, ChevronRight } from 'lucide-react'
 
 export default async function GroupsPage() {
@@ -23,13 +23,11 @@ export default async function GroupsPage() {
   ])
 
   const profile = profileResult.data
-  const currentPhase = getCurrentPhase()
 
   // Fetch streaks for all groups (2 DB queries regardless of group count)
   const streaks = await getGroupStreaks(
     (groups as any[]).map((g: any) => ({ id: g.id, member_count: g.member_count }))
   )
-  const phaseClasses = getPhaseClasses(currentPhase)
 
   return (
     <div className="flex flex-col">
@@ -51,11 +49,8 @@ export default async function GroupsPage() {
             </div>
           </div>
 
-          {/* Today's phase pill */}
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold ${phaseClasses.bg} ${phaseClasses.border} ${phaseClasses.text}`}>
-            <span>{getPhaseEmoji(currentPhase)}</span>
-            <span>{getPhaseLabel(currentPhase)}</span>
-          </div>
+          {/* Today's phase pill — detected client-side for local timezone */}
+          <PhasePill variant="header" />
         </div>
       </div>
 
@@ -69,7 +64,7 @@ export default async function GroupsPage() {
               Your Groups
             </p>
             {groups.map((group: any) => (
-              <GroupCard key={group.id} group={group} currentPhase={currentPhase} streak={streaks[group.id] ?? 0} />
+              <GroupCard key={group.id} group={group} streak={streaks[group.id] ?? 0} />
             ))}
           </div>
         )}
@@ -87,13 +82,10 @@ export default async function GroupsPage() {
   )
 }
 
-function GroupCard({ group, currentPhase, streak }: {
+function GroupCard({ group, streak }: {
   group: any
-  currentPhase: ReturnType<typeof getCurrentPhase>
   streak: number
 }) {
-  const phaseClasses = getPhaseClasses(currentPhase)
-
   return (
     <Link
       href={`/groups/${group.id}`}
@@ -117,9 +109,7 @@ function GroupCard({ group, currentPhase, streak }: {
           <Users size={11} className="text-white/30" />
           <span className="text-xs text-white/40">{group.member_count} member{group.member_count !== 1 ? 's' : ''}</span>
           <span className="text-white/20">·</span>
-          <span className={`text-xs font-semibold ${phaseClasses.text}`}>
-            {getPhaseEmoji(currentPhase)} {getPhaseLabel(currentPhase)}
-          </span>
+          <PhasePill variant="inline" />
           {streak > 0 && (
             <>
               <span className="text-white/20">·</span>

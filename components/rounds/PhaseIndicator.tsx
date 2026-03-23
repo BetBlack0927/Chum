@@ -1,5 +1,8 @@
+'use client'
+
 import { getPhaseClasses, getPhaseEmoji, getPhaseLabel, getMsUntilPhaseEnd, type Phase } from '@/lib/phases'
 import { Countdown } from '@/components/ui/Countdown'
+import { LocalEndTime } from '@/components/rounds/LocalEndTime'
 import { cn } from '@/lib/utils'
 
 interface PhaseIndicatorProps {
@@ -36,11 +39,14 @@ export function PhaseIndicator({ phase, votedCount, memberCount, className }: Ph
           </div>
         </div>
 
-        <Countdown
-          targetTime={endsAt}
-          label="ends in"
-          className={cn('text-xs', classes.text)}
-        />
+        <div className="flex flex-col items-end gap-0.5">
+          <Countdown
+            targetTime={endsAt}
+            label="ends in"
+            className={cn('text-xs', classes.text)}
+          />
+          <LocalEndTime phase={phase} className="text-[10px] text-white/25" />
+        </div>
       </div>
 
       {/* Progress: how many members have voted */}

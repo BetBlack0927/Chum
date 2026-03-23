@@ -2,12 +2,19 @@
 
 import { useState, useTransition } from 'react'
 import { castVote } from '@/lib/actions/votes'
+import { getPhaseEndTime } from '@/lib/phases'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Crown, CheckCircle, MessageCircle } from 'lucide-react'
 import { cn, getAvatarColor } from '@/lib/utils'
 import type { Profile, Vote } from '@/types/database'
+
+// Formatted in the browser's local timezone, e.g. "3:00 PM" for EST
+const resultsLocalTime = getPhaseEndTime('voting').toLocaleTimeString([], {
+  hour: 'numeric',
+  minute: '2-digit',
+})
 
 const MAX_COMMENT = 80
 
@@ -51,7 +58,7 @@ export function VotingInterface({ roundId, groupId, members, userId, userVote }:
                   Your comment is saved anonymously 💬
                 </p>
               )}
-              <p className="text-xs text-white/30 mt-1">Results at 8pm UTC</p>
+              <p className="text-xs text-white/30 mt-1">Results at {resultsLocalTime}</p>
             </div>
           </div>
         </Card>

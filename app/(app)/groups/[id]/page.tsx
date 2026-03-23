@@ -4,13 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { getGroupDetails } from '@/lib/actions/groups'
 import { getOrCreateTodayRound, getRoundData } from '@/lib/actions/rounds'
 import { getPromptLikeInfo } from '@/lib/actions/prompts'
-import { getCurrentPhase, getPhaseClasses } from '@/lib/phases'
 import { TopBar } from '@/components/navigation/TopBar'
-import { PhaseIndicator } from '@/components/rounds/PhaseIndicator'
-import { VotingInterface } from '@/components/rounds/VotingInterface'
-import { WinnerReveal } from '@/components/rounds/WinnerReveal'
+import { PhaseGate } from '@/components/rounds/PhaseGate'
 import { PromptLikeButton } from '@/components/rounds/PromptLikeButton'
-import { RerollButton } from '@/components/rounds/RerollButton'
 import { Card } from '@/components/ui/Card'
 import { MembersSheet } from '@/components/groups/MembersSheet'
 import { History, Settings } from 'lucide-react'
@@ -37,7 +33,6 @@ export default async function GroupDetailPage({ params }: Props) {
 
   const { group, members, userId, userRole } = details
   const isAdmin = userRole === 'admin'
-  const phase = getCurrentPhase()
 
   // Parallelize round-dependent queries
   const [roundData, promptLikeInfo] = round 
@@ -119,62 +114,20 @@ export default async function GroupDetailPage({ params }: Props) {
           </Card>
         )}
 
-        {/* Reroll (admin only, voting phase, before any votes) */}
-        {round && phase === 'voting' && (
-          <RerollButton
+        {/* Phase-gated content: phase detection happens client-side using local time */}
+        {round && roundData && (
+          <PhaseGate
             roundId={round.id}
             groupId={groupId}
-            isAdmin={isAdmin}
+            promptText={round.prompt.text}
             hasRerolled={round.prompt_rerolled ?? false}
-            hasVotes={(roundData?.totalVotes ?? 0) > 0}
-          />
-        )}
-
-        {/* Phase indicator */}
-        {round && (
-          <PhaseIndicator
-            phase={phase}
-            votedCount={roundData?.totalVotes ?? 0}
+            nextCategory={round.next_category ?? null}
+            roundData={roundData}
+            memberProfiles={memberProfiles}
+            userId={userId}
+            isAdmin={isAdmin}
             memberCount={members.length}
           />
-        )}
-
-        {/* Phase content */}
-        {round && roundData && (
-          <>
-            {phase === 'voting' && (
-              <section>
-                <p className="text-xs font-bold text-white/30 uppercase tracking-wide mb-3">
-                  Who fits this best?
-                </p>
-                <VotingInterface
-                  roundId={round.id}
-                  groupId={groupId}
-                  members={memberProfiles}
-                  userId={userId}
-                  userVote={roundData.userVote}
-                />
-              </section>
-            )}
-
-            {phase === 'results' && (
-              <section>
-                <WinnerReveal
-                  promptText={round.prompt.text}
-                  winner={roundData.winner}
-                  nominations={roundData.nominations}
-                  totalVotes={roundData.totalVotes}
-                  allComments={roundData.allComments}
-                  revealedVoter={roundData.revealedVoter}
-                  revealedVoterNominee={roundData.revealedVoterNominee}
-                  userId={userId}
-                  roundId={round.id}
-                  groupId={groupId}
-                  nextCategory={round.next_category ?? null}
-                />
-              </section>
-            )}
-          </>
         )}
 
         {/* View history link */}
