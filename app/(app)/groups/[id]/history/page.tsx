@@ -91,6 +91,7 @@ function HistoryCard({ round, nominations, winner, totalVotes, userId }: {
             <Avatar
               username={winner.profile.username}
               color={winner.profile.avatar_color || getAvatarColor(winner.profile.id)}
+              url={winner.profile.avatar_url}
               size="md"
             />
             <div className="flex-1">
@@ -122,6 +123,7 @@ function HistoryCard({ round, nominations, winner, totalVotes, userId }: {
                       <Avatar
                         username={n.profile.username}
                         color={n.profile.avatar_color || getAvatarColor(n.profile.id)}
+                        url={n.profile.avatar_url}
                         size="sm"
                       />
                       <span className="text-xs text-white/50">

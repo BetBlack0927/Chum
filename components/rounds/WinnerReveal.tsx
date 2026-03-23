@@ -57,6 +57,7 @@ export function WinnerReveal({
             <Avatar
               username={winner.profile.username}
               color={winner.profile.avatar_color || getAvatarColor(winner.profile.id)}
+              url={winner.profile.avatar_url}
               size="xl"
             />
             <div>
@@ -111,6 +112,7 @@ export function WinnerReveal({
               <Avatar
                 username={revealedVoter.username}
                 color={revealedVoter.avatar_color || getAvatarColor(revealedVoter.id)}
+                url={revealedVoter.avatar_url}
                 size="xl"
               />
               <span className="absolute -top-1 -right-1 text-sm">🔥</span>
@@ -224,6 +226,7 @@ export function WinnerReveal({
                   <Avatar
                     username={n.profile.username}
                     color={n.profile.avatar_color || getAvatarColor(n.profile.id)}
+                    url={n.profile.avatar_url}
                     size="md"
                   />
                   <div className="flex-1 min-w-0">

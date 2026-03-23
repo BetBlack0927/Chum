@@ -208,6 +208,7 @@ function MemberCard({
       <Avatar
         username={member.username}
         color={member.avatar_color || getAvatarColor(member.id)}
+        url={member.avatar_url}
         size="md"
       />
       <div className="flex-1">

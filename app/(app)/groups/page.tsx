@@ -16,7 +16,7 @@ export default async function GroupsPage() {
   const [profileResult, groups] = await Promise.all([
     supabase
       .from('profiles')
-      .select('username, avatar_color')
+      .select('username, avatar_color, avatar_url')
       .eq('id', user.id)
       .single(),
     getUserGroups()
@@ -36,6 +36,7 @@ export default async function GroupsPage() {
               <Avatar
                 username={profile.username}
                 color={profile.avatar_color}
+                url={profile.avatar_url}
                 size="md"
               />
             )}
