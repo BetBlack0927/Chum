@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getGroupDetails } from '@/lib/actions/groups'
 import { TopBar } from '@/components/navigation/TopBar'
 import { GroupAvatarUpload } from '@/components/groups/GroupAvatarUpload'
+import { LeaveGroupButton } from '@/components/groups/LeaveGroupButton'
 import { Card } from '@/components/ui/Card'
 import { ShieldAlert } from 'lucide-react'
 
@@ -20,7 +21,7 @@ export default async function GroupSettingsPage({ params }: Props) {
   const details = await getGroupDetails(groupId)
   if (!details) notFound()
 
-  const { group, userRole } = details
+  const { group, userRole, userId } = details
   const isAdmin = userRole === 'admin'
 
   return (
@@ -77,6 +78,9 @@ export default async function GroupSettingsPage({ params }: Props) {
             </div>
           </div>
         </Card>
+
+        {/* Leave group */}
+        <LeaveGroupButton groupId={groupId} userId={userId} />
 
       </div>
     </div>
