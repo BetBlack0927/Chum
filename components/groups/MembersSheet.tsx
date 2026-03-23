@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { kickMember } from '@/lib/actions/groups'
+import { getCurrentPhase, getMsUntilPhaseEnd } from '@/lib/phases'
 import { Avatar } from '@/components/ui/Avatar'
 import { getAvatarColor, cn } from '@/lib/utils'
 import { X, ShieldCheck, UserMinus } from 'lucide-react'
@@ -186,7 +187,11 @@ function MemberRow({
               <span className="text-white/15 text-xs">·</span>
               <span className={cn(
                 'text-xs font-medium',
-                hasVoted ? 'text-emerald-400/80' : 'text-white/25',
+                hasVoted
+                  ? 'text-emerald-400/80'
+                  : (getCurrentPhase() === 'voting' && getMsUntilPhaseEnd('voting') < 3_600_000)
+                    ? 'text-red-400'
+                    : 'text-white/25',
               )}>
                 {hasVoted ? '✓ Voted today' : 'Hasn\'t voted yet'}
               </span>
