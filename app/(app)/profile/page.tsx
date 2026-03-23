@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { TopBar } from '@/components/navigation/TopBar'
-import { Avatar } from '@/components/ui/Avatar'
+import { AvatarUpload } from '@/components/profile/AvatarUpload'
 import { Card } from '@/components/ui/Card'
 import { signOut } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/Button'
@@ -23,13 +23,14 @@ export default async function ProfilePage() {
       <TopBar title="Profile" />
 
       <div className="px-4 pt-6 flex flex-col gap-4">
-        <div className="flex flex-col items-center gap-4 py-6">
-          <Avatar
+        <div className="flex flex-col items-center gap-2 py-6">
+          <AvatarUpload
+            userId={user.id}
             username={profile?.username ?? '??'}
-            color={profile?.avatar_color}
-            size="xl"
+            avatarColor={profile?.avatar_color ?? '#8b5cf6'}
+            avatarUrl={profile?.avatar_url ?? null}
           />
-          <div className="text-center">
+          <div className="text-center mt-2">
             <p className="text-xl font-bold text-white">@{profile?.username}</p>
             <p className="text-sm text-white/40 mt-0.5">{user.email}</p>
           </div>

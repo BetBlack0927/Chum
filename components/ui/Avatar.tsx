@@ -4,6 +4,7 @@ import { getInitials } from '@/lib/utils'
 interface AvatarProps {
   username: string
   color?: string
+  url?: string | null
   size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
 }
@@ -15,7 +16,18 @@ const sizes = {
   xl: 'w-16 h-16 text-xl',
 }
 
-export function Avatar({ username, color = '#8b5cf6', size = 'md', className }: AvatarProps) {
+export function Avatar({ username, color = '#8b5cf6', url, size = 'md', className }: AvatarProps) {
+  if (url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={url}
+        alt={username}
+        className={cn('rounded-full object-cover shrink-0 select-none', sizes[size], className)}
+      />
+    )
+  }
+
   return (
     <div
       className={cn(
@@ -31,7 +43,7 @@ export function Avatar({ username, color = '#8b5cf6', size = 'md', className }: 
 }
 
 interface AvatarGroupProps {
-  users: Array<{ username: string; avatar_color?: string }>
+  users: Array<{ username: string; avatar_color?: string; avatar_url?: string | null }>
   max?: number
   size?: AvatarProps['size']
 }
@@ -44,7 +56,7 @@ export function AvatarGroup({ users, max = 4, size = 'sm' }: AvatarGroupProps) {
     <div className="flex items-center">
       {visible.map((user, i) => (
         <div key={i} className="-ml-1.5 first:ml-0 ring-2 ring-app-bg rounded-full">
-          <Avatar username={user.username} color={user.avatar_color} size={size} />
+          <Avatar username={user.username} color={user.avatar_color} url={user.avatar_url} size={size} />
         </div>
       ))}
       {overflow > 0 && (
