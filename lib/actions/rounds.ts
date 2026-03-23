@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { RoundWithPrompt, NominationResult, Profile } from '@/types/database'
@@ -225,64 +226,109 @@ export async function chooseNextCategory(formData: FormData) {
 // ─── Round data (nominations tally) ──────────────────────────────────────────
 
 export async function getRoundData(roundId: string, userId: string) {
-  const admin = createAdminClient()
+  // Cache round data for 5 seconds - voting changes frequently but reduce redundant fetches
+  return unstable_cache(
+    async (roundId: string, userId: string) => {
+      const admin = createAdminClient()
 
-  const { data: votes } = await admin
-    .from('votes')
-    .select('*, voter:profiles!voter_id(*), nominee:profiles!nominated_user_id(*)')
-    .eq('round_id', roundId)
+      // Parallelize independent queries for better performance
+      const [votesBasic, userVoteData, revealedVoterId] = await Promise.all([
+        // Get all votes with nominee profiles only (no need for voter profiles in most queries)
+        admin
+          .from('votes')
+          .select('nominated_user_id, comment, profiles!nominated_user_id(id, username, avatar_color, created_at)')
+          .eq('round_id', roundId),
+        
+        // Get user's specific vote separately
+        admin
+          .from('votes')
+          .select('*')
+          .eq('round_id', roundId)
+          .eq('voter_id', userId)
+          .maybeSingle(),
+        
+        // Get or set revealed voter
+        ensureRevealedVoterId(admin, roundId)
+      ])
 
-  const userVote = (votes ?? []).find((v) => v.voter_id === userId) ?? null
+      const votes = votesBasic.data ?? []
+      const userVote = userVoteData.data ?? null
 
-  // Tally nominations
-  const countMap: Record<string, { profile: Profile; count: number; comments: string[] }> = {}
-  for (const v of votes ?? []) {
-    const uid = v.nominated_user_id
-    if (!countMap[uid]) countMap[uid] = { profile: v.nominee as Profile, count: 0, comments: [] }
-    countMap[uid].count++
-    if (v.comment) countMap[uid].comments.push(v.comment)
-  }
+      // Tally nominations (more efficient with reduced data)
+      const countMap: Record<string, { profile: Profile; count: number; comments: string[] }> = {}
+      for (const v of votes) {
+        const uid = v.nominated_user_id
+        const profile = v.profiles as unknown as Profile
+        if (!countMap[uid]) {
+          countMap[uid] = { 
+            profile, 
+            count: 0, 
+            comments: [] 
+          }
+        }
+        countMap[uid].count++
+        if (v.comment) countMap[uid].comments.push(v.comment)
+      }
 
-  const nominations: NominationResult[] = Object.values(countMap)
-    .map((e) => ({ profile: e.profile, vote_count: e.count, comments: e.comments }))
-    .sort((a, b) => b.vote_count - a.vote_count)
+      const nominations: NominationResult[] = Object.values(countMap)
+        .map((e) => ({ profile: e.profile, vote_count: e.count, comments: e.comments }))
+        .sort((a, b) => b.vote_count - a.vote_count)
 
-  const winner = nominations.length > 0 && nominations[0].vote_count > 0
-    ? nominations[0]
-    : null
+      const winner = nominations.length > 0 && nominations[0].vote_count > 0
+        ? nominations[0]
+        : null
 
-  // Collect all comments with their nominee context (shown anonymously in results)
-  const allComments = (votes ?? [])
-    .filter((v) => !!v.comment)
-    .map((v) => ({
-      comment:          v.comment as string,
-      nomineeUsername:  (v.nominee as Profile).username,
-    }))
+      // Collect all comments with their nominee context
+      const allComments = votes
+        .filter((v) => !!v.comment)
+        .map((v) => ({
+          comment: v.comment as string,
+          nomineeUsername: (v.profiles as unknown as Profile).username,
+        }))
 
-  // Pick and persist a revealed voter
-  const revealed = await ensureRevealedVoter(admin, roundId, votes ?? [])
+      // Get revealed voter details if set
+      let revealedVoter: Profile | null = null
+      let revealedVoterNominee: Profile | null = null
+      
+      if (revealedVoterId) {
+        const { data: revealedVoteData } = await admin
+          .from('votes')
+          .select('voter_id, nominated_user_id')
+          .eq('round_id', roundId)
+          .eq('voter_id', revealedVoterId)
+          .maybeSingle()
+        
+        if (revealedVoteData) {
+          // Fetch profiles separately for cleaner typing
+          const [voterProfile, nomineeProfile] = await Promise.all([
+            admin.from('profiles').select('*').eq('id', revealedVoteData.voter_id).single(),
+            admin.from('profiles').select('*').eq('id', revealedVoteData.nominated_user_id).single()
+          ])
+          revealedVoter = voterProfile.data
+          revealedVoterNominee = nomineeProfile.data
+        }
+      }
 
-  return {
-    nominations,
-    userVote,
-    winner,
-    totalVotes: (votes ?? []).length,
-    allComments,
-    revealedVoter:        revealed?.voter ?? null,
-    revealedVoterNominee: revealed?.nominee ?? null,
-  }
+      return {
+        nominations,
+        userVote,
+        winner,
+        totalVotes: votes.length,
+        allComments,
+        revealedVoter,
+        revealedVoterNominee,
+      }
+    },
+    [`round-data-${roundId}-${userId}`],
+    { revalidate: 5, tags: [`round-${roundId}`] }
+  )(roundId, userId)
 }
 
-// Atomically pick one random voter to be publicly revealed for a round.
-// Once set it never changes — same person stays exposed.
-// Returns both the voter's profile and the profile of who they voted for.
-async function ensureRevealedVoter(
+// Get or set the revealed voter ID (optimized version)
+async function ensureRevealedVoterId(
   admin: ReturnType<typeof createAdminClient>,
-  roundId: string,
-  votes: Array<{ voter_id: string; nominated_user_id: string; voter: unknown; nominee: unknown }>,
-): Promise<{ voter: Profile; nominee: Profile } | null> {
-  if (votes.length === 0) return null
-
+  roundId: string
+): Promise<string | null> {
   // Check if already set
   const { data: round } = await admin
     .from('rounds')
@@ -290,32 +336,37 @@ async function ensureRevealedVoter(
     .eq('id', roundId)
     .single()
 
-  let revealedId = round?.revealed_voter_id as string | null
-
-  if (!revealedId) {
-    // Pick a random voter and store it atomically (IS NULL guard prevents overwrites)
-    const picked = votes[Math.floor(Math.random() * votes.length)]
-    revealedId = picked.voter_id
-
-    await admin
-      .from('rounds')
-      .update({ revealed_voter_id: revealedId })
-      .eq('id', roundId)
-      .is('revealed_voter_id', null)
-
-    // Re-fetch in case of race condition — use whatever was actually stored
-    const { data: updated } = await admin
-      .from('rounds')
-      .select('revealed_voter_id')
-      .eq('id', roundId)
-      .single()
-
-    revealedId = updated?.revealed_voter_id ?? revealedId
+  if (round?.revealed_voter_id) {
+    return round.revealed_voter_id as string
   }
 
-  const revealedVote = votes.find((v) => v.voter_id === revealedId)
-  if (!revealedVote) return null
-  return { voter: revealedVote.voter as Profile, nominee: revealedVote.nominee as Profile }
+  // Get all voter IDs to pick one
+  const { data: votes } = await admin
+    .from('votes')
+    .select('voter_id')
+    .eq('round_id', roundId)
+
+  if (!votes || votes.length === 0) return null
+
+  // Pick a random voter
+  const picked = votes[Math.floor(Math.random() * votes.length)]
+  const revealedId = picked.voter_id
+
+  // Store it atomically (IS NULL guard prevents overwrites)
+  await admin
+    .from('rounds')
+    .update({ revealed_voter_id: revealedId })
+    .eq('id', roundId)
+    .is('revealed_voter_id', null)
+
+  // Re-fetch to handle race conditions
+  const { data: updated } = await admin
+    .from('rounds')
+    .select('revealed_voter_id')
+    .eq('id', roundId)
+    .single()
+
+  return (updated?.revealed_voter_id as string) ?? revealedId
 }
 
 // ─── Group history ────────────────────────────────────────────────────────────
@@ -334,32 +385,45 @@ export async function getGroupHistory(groupId: string) {
 
   if (!rounds || rounds.length === 0) return []
 
-  return Promise.all(
-    rounds.map(async (round) => {
-      const { data: votes } = await admin
-        .from('votes')
-        .select('*, voter:profiles!voter_id(*), nominee:profiles!nominated_user_id(*)')
-        .eq('round_id', round.id)
+  // Fetch all votes for all rounds in a single query (prevents N+1)
+  const roundIds = rounds.map(r => r.id)
+  const { data: allVotes } = await admin
+    .from('votes')
+    .select('round_id, nominated_user_id, profiles!nominated_user_id(id, username, avatar_color, created_at)')
+    .in('round_id', roundIds)
 
-      const countMap: Record<string, { profile: Profile; count: number }> = {}
-      for (const v of votes ?? []) {
-        const uid = v.nominated_user_id
-        if (!countMap[uid]) countMap[uid] = { profile: v.nominee as Profile, count: 0 }
-        countMap[uid].count++
-      }
+  // Group votes by round_id
+  const votesByRound: Record<string, NonNullable<typeof allVotes>> = {}
+  for (const vote of allVotes ?? []) {
+    if (!votesByRound[vote.round_id]) {
+      votesByRound[vote.round_id] = []
+    }
+    votesByRound[vote.round_id]!.push(vote)
+  }
 
-      const nominations: NominationResult[] = Object.values(countMap)
-        .map((e) => ({ profile: e.profile, vote_count: e.count }))
-        .sort((a, b) => b.vote_count - a.vote_count)
+  // Process each round with its votes
+  return rounds.map((round) => {
+    const votes = votesByRound[round.id] ?? []
 
-      const winner = nominations.length > 0 ? nominations[0] : null
+    const countMap: Record<string, { profile: Profile; count: number }> = {}
+    for (const v of votes) {
+      const uid = v.nominated_user_id
+      const profile = v.profiles as unknown as Profile
+      if (!countMap[uid]) countMap[uid] = { profile, count: 0 }
+      countMap[uid].count++
+    }
 
-      return {
-        round: round as RoundWithPrompt,
-        nominations,
-        winner: winner?.vote_count && winner.vote_count > 0 ? winner : null,
-        totalVotes: (votes ?? []).length,
-      }
-    })
-  )
+    const nominations: NominationResult[] = Object.values(countMap)
+      .map((e) => ({ profile: e.profile, vote_count: e.count }))
+      .sort((a, b) => b.vote_count - a.vote_count)
+
+    const winner = nominations.length > 0 ? nominations[0] : null
+
+    return {
+      round: round as RoundWithPrompt,
+      nominations,
+      winner: winner?.vote_count && winner.vote_count > 0 ? winner : null,
+      totalVotes: votes.length,
+    }
+  })
 }

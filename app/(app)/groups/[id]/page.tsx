@@ -26,18 +26,24 @@ export default async function GroupDetailPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const details = await getGroupDetails(groupId)
+  // Parallelize independent queries
+  const [details, round] = await Promise.all([
+    getGroupDetails(groupId),
+    getOrCreateTodayRound(groupId)
+  ])
+  
   if (!details) notFound()
 
   const { group, members, userId } = details
-
-  const round = await getOrCreateTodayRound(groupId)
   const phase = getCurrentPhase()
 
-  const roundData = round ? await getRoundData(round.id, userId) : null
-  
-  // Get like info for today's prompt
-  const promptLikeInfo = round ? await getPromptLikeInfo(round.prompt_id) : null
+  // Parallelize round-dependent queries
+  const [roundData, promptLikeInfo] = round 
+    ? await Promise.all([
+        getRoundData(round.id, userId),
+        getPromptLikeInfo(round.prompt_id)
+      ])
+    : [null, null]
 
   // Flat list of member profiles for the voting UI
   const memberProfiles = members.map((m: any) => m.profiles).filter(Boolean)

@@ -12,13 +12,17 @@ export default async function GroupsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('username, avatar_color')
-    .eq('id', user.id)
-    .single()
+  // Parallelize independent queries
+  const [profileResult, groups] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('username, avatar_color')
+      .eq('id', user.id)
+      .single(),
+    getUserGroups()
+  ])
 
-  const groups = await getUserGroups()
+  const profile = profileResult.data
   const currentPhase = getCurrentPhase()
   const phaseClasses = getPhaseClasses(currentPhase)
 

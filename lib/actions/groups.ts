@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { VALID_CATEGORIES } from '@/lib/categories'
@@ -242,27 +243,51 @@ export async function getUserGroups() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const admin = createAdminClient()
+  // Cache user groups for 15 seconds to reduce DB load on navigation
+  return unstable_cache(
+    async (userId: string) => {
+      const admin = createAdminClient()
 
-  const { data, error } = await admin
-    .from('group_members')
-    .select(`
-      role,
-      groups (
-        id, name, description, invite_code, created_at,
-        group_members (count)
-      )
-    `)
-    .eq('user_id', user.id)
-    .order('joined_at', { ascending: false })
+      // Fetch user's groups with their role
+      const { data, error } = await admin
+        .from('group_members')
+        .select(`
+          role,
+          joined_at,
+          groups (
+            id, name, description, invite_code, created_at
+          )
+        `)
+        .eq('user_id', userId)
+        .order('joined_at', { ascending: false })
 
-  if (error || !data) return []
+      if (error || !data) return []
 
-  return data.map((row) => ({
-    ...(row.groups as any),
-    role: row.role,
-    member_count: (row.groups as any).group_members[0]?.count ?? 0,
-  }))
+      const groupIds = data.map((row) => (row.groups as any).id).filter(Boolean)
+
+      if (groupIds.length === 0) return []
+
+      // Get member counts for all groups in a single query
+      const { data: memberCounts } = await admin
+        .from('group_members')
+        .select('group_id')
+        .in('group_id', groupIds)
+
+      // Count members per group
+      const countMap: Record<string, number> = {}
+      for (const member of memberCounts ?? []) {
+        countMap[member.group_id] = (countMap[member.group_id] ?? 0) + 1
+      }
+
+      return data.map((row) => ({
+        ...(row.groups as any),
+        role: row.role,
+        member_count: countMap[(row.groups as any).id] ?? 0,
+      }))
+    },
+    [`user-groups-${user.id}`],
+    { revalidate: 15, tags: [`user-groups-${user.id}`] }
+  )(user.id)
 }
 
 export async function getGroupDetails(groupId: string) {
@@ -270,36 +295,48 @@ export async function getGroupDetails(groupId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const admin = createAdminClient()
+  // Cache group details for 10 seconds
+  return unstable_cache(
+    async (groupId: string, userId: string) => {
+      const admin = createAdminClient()
 
-  // Verify membership
-  const { data: membership } = await admin
-    .from('group_members')
-    .select('role')
-    .eq('group_id', groupId)
-    .eq('user_id', user.id)
-    .maybeSingle()
+      // Parallelize all queries - no need to wait for membership check
+      const [membershipResult, groupResult, membersResult] = await Promise.all([
+        admin
+          .from('group_members')
+          .select('role')
+          .eq('group_id', groupId)
+          .eq('user_id', userId)
+          .maybeSingle(),
+        admin
+          .from('groups')
+          .select('*')
+          .eq('id', groupId)
+          .single(),
+        admin
+          .from('group_members')
+          .select('*, profiles(*)')
+          .eq('group_id', groupId)
+          .order('joined_at', { ascending: true })
+      ])
 
-  if (!membership) return null
+      // Check membership after fetching
+      if (!membershipResult.data) return null
 
-  const { data: group } = await admin
-    .from('groups')
-    .select('*')
-    .eq('id', groupId)
-    .single()
+      const membership = membershipResult.data
+      const group = groupResult.data
+      const members = membersResult.data ?? []
 
-  const { data: members } = await admin
-    .from('group_members')
-    .select('*, profiles(*)')
-    .eq('group_id', groupId)
-    .order('joined_at', { ascending: true })
-
-  return {
-    group,
-    members: members ?? [],
-    userRole: membership.role,
-    userId: user.id,
-  }
+      return {
+        group,
+        members: members ?? [],
+        userRole: membership.role,
+        userId,
+      }
+    },
+    [`group-details-${groupId}-${user.id}`],
+    { revalidate: 10, tags: [`group-${groupId}`] }
+  )(groupId, user.id)
 }
 
 function generateInviteCode(): string {

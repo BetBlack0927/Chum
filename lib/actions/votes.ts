@@ -48,6 +48,7 @@ export async function castVote(formData: FormData) {
 
   if (error) return { error: error.message }
 
+  // Invalidate caches
   revalidatePath(`/groups/${groupId}`)
   return { success: true }
 }
