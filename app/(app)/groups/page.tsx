@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getUserGroups } from '@/lib/actions/groups'
+import { getUserGroups, getGroupStreaks } from '@/lib/actions/groups'
 import { getCurrentPhase, getPhaseClasses, getPhaseEmoji, getPhaseLabel } from '@/lib/phases'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
@@ -24,6 +24,11 @@ export default async function GroupsPage() {
 
   const profile = profileResult.data
   const currentPhase = getCurrentPhase()
+
+  // Fetch streaks for all groups (2 DB queries regardless of group count)
+  const streaks = await getGroupStreaks(
+    (groups as any[]).map((g: any) => ({ id: g.id, member_count: g.member_count }))
+  )
   const phaseClasses = getPhaseClasses(currentPhase)
 
   return (
@@ -64,7 +69,7 @@ export default async function GroupsPage() {
               Your Groups
             </p>
             {groups.map((group: any) => (
-              <GroupCard key={group.id} group={group} currentPhase={currentPhase} />
+              <GroupCard key={group.id} group={group} currentPhase={currentPhase} streak={streaks[group.id] ?? 0} />
             ))}
           </div>
         )}
@@ -82,7 +87,11 @@ export default async function GroupsPage() {
   )
 }
 
-function GroupCard({ group, currentPhase }: { group: any; currentPhase: ReturnType<typeof getCurrentPhase> }) {
+function GroupCard({ group, currentPhase, streak }: {
+  group: any
+  currentPhase: ReturnType<typeof getCurrentPhase>
+  streak: number
+}) {
   const phaseClasses = getPhaseClasses(currentPhase)
 
   return (
@@ -104,13 +113,21 @@ function GroupCard({ group, currentPhase }: { group: any; currentPhase: ReturnTy
 
       <div className="flex-1 min-w-0">
         <p className="font-bold text-white text-sm truncate">{group.name}</p>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <Users size={11} className="text-white/30" />
           <span className="text-xs text-white/40">{group.member_count} member{group.member_count !== 1 ? 's' : ''}</span>
           <span className="text-white/20">·</span>
           <span className={`text-xs font-semibold ${phaseClasses.text}`}>
             {getPhaseEmoji(currentPhase)} {getPhaseLabel(currentPhase)}
           </span>
+          {streak > 0 && (
+            <>
+              <span className="text-white/20">·</span>
+              <span className="text-xs font-bold text-orange-400">
+                🔥 {streak}
+              </span>
+            </>
+          )}
         </div>
       </div>
 

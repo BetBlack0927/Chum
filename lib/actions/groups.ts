@@ -373,6 +373,73 @@ export async function getGroupDetails(groupId: string) {
   )(groupId, user.id)
 }
 
+// ─── Daily streaks ────────────────────────────────────────────────────────────
+// A streak day = a completed round where ALL members cast a vote.
+// We count consecutive such rounds going backwards (most recent first).
+
+export async function getGroupStreaks(
+  groups: Array<{ id: string; member_count: number }>
+): Promise<Record<string, number>> {
+  if (groups.length === 0) return {}
+
+  const admin  = createAdminClient()
+  const today  = new Date().toISOString().split('T')[0]
+  const groupIds = groups.map((g) => g.id)
+
+  // Fetch completed rounds (not today, since voting may still be open)
+  const { data: rounds } = await admin
+    .from('rounds')
+    .select('id, date, group_id')
+    .in('group_id', groupIds)
+    .lt('date', today)
+    .order('date', { ascending: false })
+    .limit(60)
+
+  if (!rounds || rounds.length === 0) {
+    return Object.fromEntries(groupIds.map((id) => [id, 0]))
+  }
+
+  // Fetch vote counts for all these rounds in one query
+  const roundIds = rounds.map((r) => r.id)
+  const { data: votes } = await admin
+    .from('votes')
+    .select('round_id')
+    .in('round_id', roundIds)
+
+  const voteCounts: Record<string, number> = {}
+  for (const v of votes ?? []) {
+    voteCounts[v.round_id] = (voteCounts[v.round_id] ?? 0) + 1
+  }
+
+  // Group rounds by group_id (already sorted date desc)
+  const roundsByGroup: Record<string, typeof rounds> = {}
+  for (const r of rounds) {
+    if (!roundsByGroup[r.group_id]) roundsByGroup[r.group_id] = []
+    roundsByGroup[r.group_id].push(r)
+  }
+
+  const memberCountMap = Object.fromEntries(groups.map((g) => [g.id, g.member_count]))
+  const streaks: Record<string, number> = {}
+
+  for (const groupId of groupIds) {
+    const groupRounds = roundsByGroup[groupId] ?? []
+    const memberCount = memberCountMap[groupId] ?? 1
+    let streak = 0
+
+    for (const round of groupRounds) {
+      if ((voteCounts[round.id] ?? 0) >= memberCount) {
+        streak++
+      } else {
+        break // first round where not everyone voted — streak ends
+      }
+    }
+
+    streaks[groupId] = streak
+  }
+
+  return streaks
+}
+
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
