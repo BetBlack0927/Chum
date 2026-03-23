@@ -373,6 +373,51 @@ export async function getGroupDetails(groupId: string) {
   )(groupId, user.id)
 }
 
+// ─── Kick a member (admin only) ──────────────────────────────────────────────
+
+export async function kickMember(groupId: string, targetUserId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+  if (user.id === targetUserId) return { error: 'You cannot kick yourself.' }
+
+  const admin = createAdminClient()
+
+  // Caller must be admin
+  const { data: callerMembership } = await admin
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!callerMembership || callerMembership.role !== 'admin') {
+    return { error: 'Only group admins can remove members.' }
+  }
+
+  // Cannot kick another admin
+  const { data: targetMembership } = await admin
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', targetUserId)
+    .maybeSingle()
+
+  if (!targetMembership) return { error: 'Member not found.' }
+  if (targetMembership.role === 'admin') return { error: 'Cannot remove another admin.' }
+
+  const { error } = await admin
+    .from('group_members')
+    .delete()
+    .eq('group_id', groupId)
+    .eq('user_id', targetUserId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/groups/${groupId}`)
+  return { success: true }
+}
+
 // ─── Daily streaks ────────────────────────────────────────────────────────────
 // A streak day = a completed round where ALL members cast a vote.
 // We count consecutive such rounds going backwards (most recent first).

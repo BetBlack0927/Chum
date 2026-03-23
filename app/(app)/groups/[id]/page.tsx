@@ -12,7 +12,7 @@ import { WinnerReveal } from '@/components/rounds/WinnerReveal'
 import { PromptLikeButton } from '@/components/rounds/PromptLikeButton'
 import { RerollButton } from '@/components/rounds/RerollButton'
 import { Card } from '@/components/ui/Card'
-import { AvatarGroup } from '@/components/ui/Avatar'
+import { MembersSheet } from '@/components/groups/MembersSheet'
 import { History, Settings } from 'lucide-react'
 import { InviteCodeButton } from './InviteCodeButton'
 
@@ -76,16 +76,18 @@ export default async function GroupDetailPage({ params }: Props) {
       <div className="px-4 pt-4 flex flex-col gap-4">
         {/* Group meta row */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AvatarGroup
-              users={memberProfiles.map((p: any) => ({ username: p.username, avatar_color: p.avatar_color, avatar_url: p.avatar_url }))}
-              max={5}
-              size="sm"
-            />
-            <span className="text-xs text-white/40">
-              {members.length} member{members.length !== 1 ? 's' : ''}
-            </span>
-          </div>
+          <MembersSheet
+            groupId={groupId}
+            members={members.map((m: any) => ({
+              id:           m.profiles?.id ?? m.user_id,
+              username:     m.profiles?.username ?? '?',
+              avatar_color: m.profiles?.avatar_color ?? '#8b5cf6',
+              avatar_url:   m.profiles?.avatar_url ?? null,
+              role:         m.role,
+            }))}
+            currentUserId={userId}
+            isAdmin={isAdmin}
+          />
           <InviteCodeButton code={group.invite_code} />
         </div>
 
