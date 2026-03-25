@@ -197,7 +197,7 @@ export function ShareResult({
       {/* ── Preview modal ── */}
       {imageUrl && (
         <div
-          className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-6"
+          className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-10"
           onClick={() => setImageUrl(null)}
         >
           <div
