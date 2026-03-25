@@ -24,6 +24,7 @@ export function ShopFilters() {
 
   const updateParam = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString())
+    params.delete('tab') // always reset to browse when filtering
     if (value === 'all' || value === '') {
       params.delete(key)
     } else {

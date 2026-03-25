@@ -511,6 +511,69 @@ export async function getMyGroups() {
   return (data ?? []).map((row: any) => row.groups).filter(Boolean) as { id: string; name: string }[]
 }
 
+// Returns groups with a flag showing whether the given prompt is already in each group
+export async function getMyGroupsForPrompt(promptId: string): Promise<{
+  id: string
+  name: string
+  alreadyAdded: boolean
+}[]> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const admin = createAdminClient()
+
+  const [membershipsResult, assignedResult] = await Promise.all([
+    admin.from('group_members').select('groups(id, name)').eq('user_id', user.id),
+    admin.from('group_prompts').select('group_id').eq('prompt_id', promptId),
+  ])
+
+  const assignedGroupIds = new Set((assignedResult.data ?? []).map((r: any) => r.group_id))
+
+  return (membershipsResult.data ?? [])
+    .map((row: any) => row.groups)
+    .filter(Boolean)
+    .map((g: any) => ({ id: g.id, name: g.name, alreadyAdded: assignedGroupIds.has(g.id) }))
+}
+
+// ─── Saved items ──────────────────────────────────────────────────────────────
+
+export async function getSavedItems(userId: string): Promise<{
+  prompts: ShopPrompt[]
+  packs: PromptPack[]
+}> {
+  const admin = createAdminClient()
+
+  const [savedPromptsResult, savedPacksResult] = await Promise.all([
+    admin
+      .from('saved_prompts')
+      .select('prompts(*, creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at))')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false }),
+    admin
+      .from('saved_packs')
+      .select('prompt_packs(*, creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at), prompt_count:pack_prompts(count))')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false }),
+  ])
+
+  const prompts: ShopPrompt[] = (savedPromptsResult.data ?? [])
+    .map((row: any) => row.prompts)
+    .filter(Boolean)
+    .map((p: any) => ({ ...p, is_saved: true }))
+
+  const packs: PromptPack[] = (savedPacksResult.data ?? [])
+    .map((row: any) => row.prompt_packs)
+    .filter(Boolean)
+    .map((p: any) => ({
+      ...p,
+      prompt_count: p.prompt_count?.[0]?.count ?? 0,
+      is_saved: true,
+    }))
+
+  return { prompts, packs }
+}
+
 // ─── Update creator bio ───────────────────────────────────────────────────────
 
 export async function updateBio(bio: string) {

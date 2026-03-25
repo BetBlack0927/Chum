@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card'
 import { signOut } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/Button'
 import { BioEditor } from './BioEditor'
-import { LogOut, Store, MessageSquare, Layers, ExternalLink } from 'lucide-react'
+import { LogOut, Store, MessageSquare, ExternalLink } from 'lucide-react'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -57,17 +57,8 @@ export default async function ProfilePage() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Store size={16} className="text-brand-light" />
-              <p className="text-xs font-bold text-white/50 uppercase tracking-wide">Creator</p>
+              <p className="text-xs font-bold text-white/50 uppercase tracking-wide">Creator Profile</p>
             </div>
-            {profile?.username && (
-              <Link
-                href={`/creators/${profile.username}`}
-                className="flex items-center gap-1 text-xs text-white/30 hover:text-white/60 transition-colors"
-              >
-                View profile
-                <ExternalLink size={11} />
-              </Link>
-            )}
           </div>
 
           <div className="flex gap-4 mb-4">
@@ -82,13 +73,24 @@ export default async function ProfilePage() {
             </div>
           </div>
 
-          <Link
-            href="/shop/create"
-            className="flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-brand/15 text-brand-light text-sm font-semibold hover:bg-brand/25 transition-colors"
-          >
-            <MessageSquare size={15} />
-            Create Prompt or Pack
-          </Link>
+          <div className="flex gap-2">
+            {profile?.username && (
+              <Link
+                href={`/creators/${profile.username}`}
+                className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl border border-white/10 text-white/60 text-sm font-semibold hover:border-white/20 hover:text-white transition-colors"
+              >
+                <ExternalLink size={14} />
+                View Profile
+              </Link>
+            )}
+            <Link
+              href="/shop/create"
+              className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-brand/15 text-brand-light text-sm font-semibold hover:bg-brand/25 transition-colors"
+            >
+              <MessageSquare size={14} />
+              Create
+            </Link>
+          </div>
         </div>
 
         {/* Account info */}
