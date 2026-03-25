@@ -26,8 +26,17 @@ export async function getShopFeed(options?: {
   const admin = createAdminClient()
   const { type = 'all', category, query, limit = 30, offset = 0 } = options ?? {}
 
-  const [promptsResult, packsResult, savedPromptsResult, savedPacksResult, packPromptIdsResult] = await Promise.all([
-    // Prompts
+  // Pre-fetch IDs of prompts that live inside a pack so we can exclude them at
+  // the DB level. Done first (sequential) to guarantee the exclusion list is
+  // ready before the main prompts query runs.
+  let packPromptIdList: string[] = []
+  if (type !== 'packs') {
+    const { data: ppData } = await admin.from('pack_prompts').select('prompt_id')
+    packPromptIdList = (ppData ?? []).map((r: any) => r.prompt_id as string)
+  }
+
+  const [promptsResult, packsResult, savedPromptsResult, savedPacksResult] = await Promise.all([
+    // Individual prompts — DB-level exclusion of any prompt that belongs to a pack
     type !== 'packs' ? (async () => {
       let q = admin
         .from('prompts')
@@ -37,6 +46,10 @@ export async function getShopFeed(options?: {
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1)
 
+      if (packPromptIdList.length > 0) {
+        // Exclude prompts that are part of any pack
+        q = q.not('id', 'in', `(${packPromptIdList.join(',')})`)
+      }
       if (category && category !== 'all') q = q.eq('category', category)
       if (query) q = q.ilike('text', `%${query}%`)
       return q
@@ -59,27 +72,18 @@ export async function getShopFeed(options?: {
       return q
     })() : Promise.resolve({ data: [] }),
 
-    // User's saved prompts
+    // User's saved prompts and packs
     admin.from('saved_prompts').select('prompt_id').eq('user_id', user.id),
     admin.from('saved_packs').select('pack_id').eq('user_id', user.id),
-
-    // All prompt IDs that belong to any pack (used to exclude them from individual prompt list)
-    type !== 'packs'
-      ? admin.from('pack_prompts').select('prompt_id')
-      : Promise.resolve({ data: [] }),
   ])
 
-  // Prompts that live inside a pack should not appear as standalone cards
-  const packPromptIds   = new Set((packPromptIdsResult.data ?? []).map((r: any) => r.prompt_id))
-  const savedPromptIds  = new Set((savedPromptsResult.data ?? []).map((r: any) => r.prompt_id))
-  const savedPackIds    = new Set((savedPacksResult.data  ?? []).map((r: any) => r.pack_id))
+  const savedPromptIds = new Set((savedPromptsResult.data ?? []).map((r: any) => r.prompt_id))
+  const savedPackIds   = new Set((savedPacksResult.data  ?? []).map((r: any) => r.pack_id))
 
-  const prompts: ShopPrompt[] = (promptsResult.data ?? [])
-    .filter((p: any) => !packPromptIds.has(p.id))
-    .map((p: any) => ({
-      ...p,
-      is_saved: savedPromptIds.has(p.id),
-    }))
+  const prompts: ShopPrompt[] = (promptsResult.data ?? []).map((p: any) => ({
+    ...p,
+    is_saved: savedPromptIds.has(p.id),
+  }))
 
   const packs: PromptPack[] = (packsResult.data ?? []).map((p: any) => ({
     ...p,
@@ -105,14 +109,25 @@ export async function getFollowingFeed(userId: string): Promise<{
 
   const followingIds = follows.map((f: any) => f.following_id)
 
-  const [promptsResult, packsResult, packPromptIdsResult] = await Promise.all([
-    admin
-      .from('prompts')
-      .select('*, creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at)')
-      .in('creator_id', followingIds)
-      .eq('visibility', 'public')
-      .order('created_at', { ascending: false })
-      .limit(20),
+  // Pre-fetch pack prompt IDs to exclude from individual feed
+  const { data: ppData } = await admin.from('pack_prompts').select('prompt_id')
+  const packPromptIdList = (ppData ?? []).map((r: any) => r.prompt_id as string)
+
+  const [promptsResult, packsResult] = await Promise.all([
+    (async () => {
+      let q = admin
+        .from('prompts')
+        .select('*, creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at)')
+        .in('creator_id', followingIds)
+        .eq('visibility', 'public')
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (packPromptIdList.length > 0) {
+        q = q.not('id', 'in', `(${packPromptIdList.join(',')})`)
+      }
+      return q
+    })(),
     admin
       .from('prompt_packs')
       .select(`
@@ -124,13 +139,10 @@ export async function getFollowingFeed(userId: string): Promise<{
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .limit(20),
-    admin.from('pack_prompts').select('prompt_id'),
   ])
 
-  const packPromptIds = new Set((packPromptIdsResult.data ?? []).map((r: any) => r.prompt_id))
-
   return {
-    prompts: (promptsResult.data ?? []).filter((p: any) => !packPromptIds.has(p.id)),
+    prompts: promptsResult.data ?? [],
     packs: (packsResult.data ?? []).map((p: any) => ({
       ...p,
       prompt_count: p.prompt_count?.[0]?.count ?? 0,
@@ -600,24 +612,61 @@ export async function getGroupCustomPrompts(groupId: string): Promise<{
   if (!user) return []
 
   const admin = createAdminClient()
-  const { data } = await admin
+
+  // Two flat queries — avoids brittle nested-join PostgREST syntax
+  const { data: gpRows } = await admin
     .from('group_prompts')
-    .select(`
-      added_at,
-      prompts(id, text, category, creator_id,
-        creator:profiles!creator_id(username)
-      )
-    `)
+    .select('prompt_id, added_at')
     .eq('group_id', groupId)
     .order('added_at', { ascending: false })
 
-  return (data ?? []).map((row: any) => ({
-    id:              row.prompts?.id ?? '',
-    text:            row.prompts?.text ?? '',
-    category:        row.prompts?.category ?? null,
-    creatorUsername: (row.prompts?.creator as any)?.username ?? null,
-    addedAt:         row.added_at,
-  })).filter((r) => r.id)
+  if (!gpRows || gpRows.length === 0) return []
+
+  const promptIds = gpRows.map((r: any) => r.prompt_id as string)
+
+  const { data: promptRows } = await admin
+    .from('prompts')
+    .select('id, text, category, creator_id')
+    .in('id', promptIds)
+
+  // Collect unique creator IDs so we can resolve usernames
+  const creatorIds = [
+    ...new Set(
+      (promptRows ?? [])
+        .map((p: any) => p.creator_id)
+        .filter(Boolean) as string[]
+    ),
+  ]
+
+  let usernameMap: Record<string, string> = {}
+  if (creatorIds.length > 0) {
+    const { data: profiles } = await admin
+      .from('profiles')
+      .select('id, username')
+      .in('id', creatorIds)
+    usernameMap = Object.fromEntries(
+      (profiles ?? []).map((p: any) => [p.id, p.username])
+    )
+  }
+
+  // Re-order results to match the original added_at order from group_prompts
+  const promptMap = Object.fromEntries(
+    (promptRows ?? []).map((p: any) => [p.id, p])
+  )
+
+  return gpRows
+    .map((row: any) => {
+      const p = promptMap[row.prompt_id]
+      if (!p) return null
+      return {
+        id:              p.id as string,
+        text:            p.text as string,
+        category:        p.category as string | null,
+        creatorUsername: p.creator_id ? (usernameMap[p.creator_id] ?? null) : null,
+        addedAt:         row.added_at as string,
+      }
+    })
+    .filter(Boolean) as { id: string; text: string; category: string | null; creatorUsername: string | null; addedAt: string }[]
 }
 
 export async function removePromptFromGroup(

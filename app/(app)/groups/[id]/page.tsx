@@ -4,11 +4,13 @@ import { createClient } from '@/lib/supabase/server'
 import { getGroupDetails } from '@/lib/actions/groups'
 import { getOrCreateTodayRound, getRoundData } from '@/lib/actions/rounds'
 import { getPromptLikeInfo } from '@/lib/actions/prompts'
+import { getGroupCustomPrompts } from '@/lib/actions/shop'
 import { TopBar } from '@/components/navigation/TopBar'
 import { PhaseGate } from '@/components/rounds/PhaseGate'
 import { PromptLikeButton } from '@/components/rounds/PromptLikeButton'
 import { Card } from '@/components/ui/Card'
 import { MembersSheet } from '@/components/groups/MembersSheet'
+import { GroupCustomPrompts } from '@/components/groups/GroupCustomPrompts'
 import { History, Settings } from 'lucide-react'
 import { InviteCodeButton } from './InviteCodeButton'
 
@@ -28,19 +30,18 @@ export default async function GroupDetailPage({ params }: Props) {
     getGroupDetails(groupId),
     getOrCreateTodayRound(groupId)
   ])
-  
+
   if (!details) notFound()
 
   const { group, members, userId, userRole } = details
   const isAdmin = userRole === 'admin'
 
-  // Parallelize round-dependent queries
-  const [roundData, promptLikeInfo] = round 
-    ? await Promise.all([
-        getRoundData(round.id, userId),
-        getPromptLikeInfo(round.prompt_id)
-      ])
-    : [null, null]
+  // Parallelize round-dependent queries + custom prompts
+  const [roundData, promptLikeInfo, customPrompts] = await Promise.all([
+    round ? getRoundData(round.id, userId) : Promise.resolve(null),
+    round ? getPromptLikeInfo(round.prompt_id) : Promise.resolve(null),
+    getGroupCustomPrompts(groupId),
+  ])
 
   // Flat list of member profiles for the voting UI
   const memberProfiles = members.map((m: any) => m.profiles).filter(Boolean)
@@ -130,6 +131,13 @@ export default async function GroupDetailPage({ params }: Props) {
             memberCount={members.length}
           />
         )}
+
+        {/* Custom prompts from the Prompt Shop */}
+        <GroupCustomPrompts
+          groupId={groupId}
+          prompts={customPrompts}
+          isAdmin={isAdmin}
+        />
 
         {/* View history link */}
         <Link
