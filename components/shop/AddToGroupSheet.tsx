@@ -89,15 +89,15 @@ export function AddToGroupSheet({ target, onClose }: AddToGroupSheetProps) {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — z-[200] sits above the bottom nav (z-50) */}
       <div
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Sheet — pinned to bottom, constrained height so it never goes off-screen */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-[430px] mx-auto flex flex-col"
-        style={{ maxHeight: 'calc(80vh - env(safe-area-inset-bottom, 0px))' }}
+      {/* Sheet — above the nav, max 80% of screen height */}
+      <div className="fixed bottom-0 left-0 right-0 z-[201] max-w-[430px] mx-auto flex flex-col"
+        style={{ maxHeight: '80vh' }}
       >
         <div className="bg-surface border-t border-white/10 rounded-t-3xl flex flex-col overflow-hidden">
           {/* ── Fixed header ── */}
@@ -193,8 +193,8 @@ export function AddToGroupSheet({ target, onClose }: AddToGroupSheetProps) {
 
           {/* ── Fixed footer ── */}
           <div
-            className="shrink-0 px-5 pt-3 pb-6 border-t border-white/6"
-            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }}
+            className="shrink-0 px-5 pt-3 border-t border-white/6"
+            style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
           >
             {error && <p className="text-sm text-red-400 text-center mb-3">{error}</p>}
 
