@@ -1,9 +1,11 @@
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getGroupDetails } from '@/lib/actions/groups'
+import { getGroupCustomPrompts } from '@/lib/actions/shop'
 import { TopBar } from '@/components/navigation/TopBar'
 import { GroupAvatarUpload } from '@/components/groups/GroupAvatarUpload'
 import { LeaveGroupButton } from '@/components/groups/LeaveGroupButton'
+import { GroupCustomPrompts } from '@/components/groups/GroupCustomPrompts'
 import { Card } from '@/components/ui/Card'
 import { ShieldAlert } from 'lucide-react'
 
@@ -24,11 +26,13 @@ export default async function GroupSettingsPage({ params }: Props) {
   const { group, userRole, userId } = details
   const isAdmin = userRole === 'admin'
 
+  const customPrompts = await getGroupCustomPrompts(groupId)
+
   return (
     <div>
       <TopBar title="Group Settings" backHref={`/groups/${groupId}`} />
 
-      <div className="px-4 pt-6 flex flex-col gap-5">
+      <div className="px-4 pt-6 pb-8 flex flex-col gap-5">
 
         {/* Group photo — admin only */}
         {isAdmin ? (
@@ -78,6 +82,13 @@ export default async function GroupSettingsPage({ params }: Props) {
             </div>
           </div>
         </Card>
+
+        {/* Custom prompts from the Shop */}
+        <GroupCustomPrompts
+          groupId={groupId}
+          prompts={customPrompts}
+          isAdmin={isAdmin}
+        />
 
         {/* Leave group */}
         <LeaveGroupButton groupId={groupId} userId={userId} />

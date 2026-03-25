@@ -26,7 +26,7 @@ export async function getShopFeed(options?: {
   const admin = createAdminClient()
   const { type = 'all', category, query, limit = 30, offset = 0 } = options ?? {}
 
-  const [promptsResult, packsResult, savedPromptsResult, savedPacksResult] = await Promise.all([
+  const [promptsResult, packsResult, savedPromptsResult, savedPacksResult, packPromptIdsResult] = await Promise.all([
     // Prompts
     type !== 'packs' ? (async () => {
       let q = admin
@@ -62,15 +62,24 @@ export async function getShopFeed(options?: {
     // User's saved prompts
     admin.from('saved_prompts').select('prompt_id').eq('user_id', user.id),
     admin.from('saved_packs').select('pack_id').eq('user_id', user.id),
+
+    // All prompt IDs that belong to any pack (used to exclude them from individual prompt list)
+    type !== 'packs'
+      ? admin.from('pack_prompts').select('prompt_id')
+      : Promise.resolve({ data: [] }),
   ])
 
+  // Prompts that live inside a pack should not appear as standalone cards
+  const packPromptIds   = new Set((packPromptIdsResult.data ?? []).map((r: any) => r.prompt_id))
   const savedPromptIds  = new Set((savedPromptsResult.data ?? []).map((r: any) => r.prompt_id))
   const savedPackIds    = new Set((savedPacksResult.data  ?? []).map((r: any) => r.pack_id))
 
-  const prompts: ShopPrompt[] = (promptsResult.data ?? []).map((p: any) => ({
-    ...p,
-    is_saved: savedPromptIds.has(p.id),
-  }))
+  const prompts: ShopPrompt[] = (promptsResult.data ?? [])
+    .filter((p: any) => !packPromptIds.has(p.id))
+    .map((p: any) => ({
+      ...p,
+      is_saved: savedPromptIds.has(p.id),
+    }))
 
   const packs: PromptPack[] = (packsResult.data ?? []).map((p: any) => ({
     ...p,
@@ -96,7 +105,7 @@ export async function getFollowingFeed(userId: string): Promise<{
 
   const followingIds = follows.map((f: any) => f.following_id)
 
-  const [promptsResult, packsResult] = await Promise.all([
+  const [promptsResult, packsResult, packPromptIdsResult] = await Promise.all([
     admin
       .from('prompts')
       .select('*, creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at)')
@@ -115,10 +124,13 @@ export async function getFollowingFeed(userId: string): Promise<{
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .limit(20),
+    admin.from('pack_prompts').select('prompt_id'),
   ])
 
+  const packPromptIds = new Set((packPromptIdsResult.data ?? []).map((r: any) => r.prompt_id))
+
   return {
-    prompts: promptsResult.data ?? [],
+    prompts: (promptsResult.data ?? []).filter((p: any) => !packPromptIds.has(p.id)),
     packs: (packsResult.data ?? []).map((p: any) => ({
       ...p,
       prompt_count: p.prompt_count?.[0]?.count ?? 0,
@@ -572,6 +584,73 @@ export async function getSavedItems(userId: string): Promise<{
     }))
 
   return { prompts, packs }
+}
+
+// ─── Group custom prompts management ─────────────────────────────────────────
+
+export async function getGroupCustomPrompts(groupId: string): Promise<{
+  id: string
+  text: string
+  category: string | null
+  creatorUsername: string | null
+  addedAt: string
+}[]> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('group_prompts')
+    .select(`
+      added_at,
+      prompts(id, text, category, creator_id,
+        creator:profiles!creator_id(username)
+      )
+    `)
+    .eq('group_id', groupId)
+    .order('added_at', { ascending: false })
+
+  return (data ?? []).map((row: any) => ({
+    id:              row.prompts?.id ?? '',
+    text:            row.prompts?.text ?? '',
+    category:        row.prompts?.category ?? null,
+    creatorUsername: (row.prompts?.creator as any)?.username ?? null,
+    addedAt:         row.added_at,
+  })).filter((r) => r.id)
+}
+
+export async function removePromptFromGroup(
+  groupId: string,
+  promptId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated.' }
+
+  const admin = createAdminClient()
+
+  // Only group members can remove
+  const { data: membership } = await admin
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!membership) return { success: false, error: 'You are not a member of this group.' }
+
+  const { error } = await admin
+    .from('group_prompts')
+    .delete()
+    .eq('group_id', groupId)
+    .eq('prompt_id', promptId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(`/groups/${groupId}/settings`)
+  revalidatePath(`/groups/${groupId}`)
+  return { success: true }
 }
 
 // ─── Update creator bio ───────────────────────────────────────────────────────
