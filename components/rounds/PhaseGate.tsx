@@ -6,6 +6,7 @@ import { getCurrentPhase, type Phase } from '@/lib/phases'
 import { PhaseIndicator } from '@/components/rounds/PhaseIndicator'
 import { VotingInterface } from '@/components/rounds/VotingInterface'
 import { WinnerReveal } from '@/components/rounds/WinnerReveal'
+import { ShareResult } from '@/components/rounds/ShareResult'
 import { RerollButton } from '@/components/rounds/RerollButton'
 import type { Profile, Vote, NominationResult } from '@/types/database'
 
@@ -86,6 +87,16 @@ export function PhaseGate({
         votedCount={roundData.totalVotes}
         memberCount={memberCount}
       />
+
+      {phase === 'results' && roundData.winner && (
+        <ShareResult
+          promptText={promptText}
+          winner={roundData.winner}
+          totalVotes={roundData.totalVotes}
+          allComments={roundData.allComments}
+          revealedVoterNominee={roundData.revealedVoterNominee}
+        />
+      )}
 
       {phase === 'voting' && (
         <section>

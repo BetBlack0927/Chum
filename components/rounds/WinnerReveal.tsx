@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { CategoryPicker } from '@/components/rounds/CategoryPicker'
-import { ShareResult } from '@/components/rounds/ShareResult'
 import { CATEGORY_META } from '@/lib/categories'
 import { getAvatarColor, cn } from '@/lib/utils'
 import type { NominationResult, Profile } from '@/types/database'
@@ -81,17 +80,6 @@ export function WinnerReveal({
             {totalVotes === 0 ? 'Nobody voted today — check back tomorrow!' : 'Not enough votes to crown a winner'}
           </p>
         </Card>
-      )}
-
-      {/* ── Share button ── */}
-      {winner && (
-        <ShareResult
-          promptText={promptText}
-          winner={winner}
-          totalVotes={totalVotes}
-          allComments={allComments}
-          revealedVoterNominee={revealedVoterNominee}
-        />
       )}
 
       {/* ── Exposed voter ── */}
