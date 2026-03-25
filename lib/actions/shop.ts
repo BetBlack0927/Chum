@@ -560,6 +560,62 @@ export async function getMyGroupsForPrompt(promptId: string): Promise<{
     .map((g: any) => ({ id: g.id, name: g.name, alreadyAdded: assignedGroupIds.has(g.id) }))
 }
 
+export async function getMyGroupsForPack(packId: string): Promise<{
+  id: string
+  name: string
+  alreadyAdded: boolean
+}[]> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const admin = createAdminClient()
+
+  // Get the user's groups and all prompt IDs that belong to this pack in parallel
+  const [membershipsResult, packPromptsResult] = await Promise.all([
+    admin.from('group_members').select('groups(id, name)').eq('user_id', user.id),
+    admin.from('pack_prompts').select('prompt_id').eq('pack_id', packId),
+  ])
+
+  const packPromptIds = (packPromptsResult.data ?? []).map((r: any) => r.prompt_id as string)
+
+  if (packPromptIds.length === 0) {
+    return (membershipsResult.data ?? [])
+      .map((row: any) => row.groups)
+      .filter(Boolean)
+      .map((g: any) => ({ id: g.id, name: g.name, alreadyAdded: false }))
+  }
+
+  // For each group, check how many of the pack's prompts are already added
+  const groups = (membershipsResult.data ?? [])
+    .map((row: any) => row.groups)
+    .filter(Boolean) as { id: string; name: string }[]
+
+  if (groups.length === 0) return []
+
+  const groupIds = groups.map((g) => g.id)
+
+  // Fetch all group_prompts rows for these groups that match pack prompt IDs
+  const { data: assignedRows } = await admin
+    .from('group_prompts')
+    .select('group_id, prompt_id')
+    .in('group_id', groupIds)
+    .in('prompt_id', packPromptIds)
+
+  // Build a map: groupId -> how many pack prompts are already there
+  const countByGroup: Record<string, number> = {}
+  for (const row of assignedRows ?? []) {
+    countByGroup[row.group_id] = (countByGroup[row.group_id] ?? 0) + 1
+  }
+
+  return groups.map((g) => ({
+    id:           g.id,
+    name:         g.name,
+    // Consider "already added" if at least one prompt from the pack is in the group
+    alreadyAdded: (countByGroup[g.id] ?? 0) >= packPromptIds.length,
+  }))
+}
+
 // ─── Saved items ──────────────────────────────────────────────────────────────
 
 export async function getSavedItems(userId: string): Promise<{

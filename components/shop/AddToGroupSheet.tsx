@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { X, Check, Layers, CheckCircle2 } from 'lucide-react'
-import { addPromptToGroups, addPackToGroups, getMyGroupsForPrompt, getMyGroups } from '@/lib/actions/shop'
+import { addPromptToGroups, addPackToGroups, getMyGroupsForPrompt, getMyGroupsForPack } from '@/lib/actions/shop'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import type { ShopPrompt, PromptPack } from '@/types/database'
@@ -39,9 +39,8 @@ export function AddToGroupSheet({ target, onClose }: AddToGroupSheetProps) {
         setLoading(false)
       })
     } else {
-      // For packs, use plain group list (partial add detection is complex)
-      getMyGroups().then((g) => {
-        setGroups(g.map((gr) => ({ ...gr, alreadyAdded: false })))
+      getMyGroupsForPack(target.item.id).then((g) => {
+        setGroups(g)
         setLoading(false)
       })
     }
