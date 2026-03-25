@@ -1,23 +1,23 @@
 export type Phase = 'voting' | 'results'
 
 // Phase boundaries in LOCAL hours (detected in the browser)
-// Voting:  midnight (0:00) → 1pm (13:00)  — vote for who fits the prompt
-// Results: 1pm    (13:00) → midnight       — see who won
+// Voting:  midnight (0:00) → 8pm (20:00)  — vote for who fits the prompt
+// Results: 8pm    (20:00) → midnight       — see who won
 export const PHASE_CONFIG = {
-  voting:  { startHour: 0,  endHour: 13, label: 'Voting',  emoji: '🗳️', color: 'yellow' as const },
-  results: { startHour: 13, endHour: 24, label: 'Results', emoji: '🏆', color: 'green'  as const },
+  voting:  { startHour: 0,  endHour: 20, label: 'Voting',  emoji: '🗳️', color: 'yellow' as const },
+  results: { startHour: 20, endHour: 24, label: 'Results', emoji: '🏆', color: 'green'  as const },
 } as const
 
 export function getCurrentPhase(now: Date = new Date()): Phase {
   const hour = now.getHours()  // local time — call this only in the browser
-  if (hour < 13) return 'voting'
+  if (hour < 20) return 'voting'
   return 'results'
 }
 
 export function getPhaseEndTime(phase: Phase, now: Date = new Date()): Date {
   const result = new Date(now)
   if (phase === 'voting') {
-    result.setHours(13, 0, 0, 0)   // local 1pm
+    result.setHours(20, 0, 0, 0)   // local 8pm
   } else {
     result.setDate(result.getDate() + 1)
     result.setHours(0, 0, 0, 0)    // local midnight
