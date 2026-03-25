@@ -26,7 +26,7 @@ export function PopularSection({ prompts, packs }: Props) {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <Flame size={14} className="text-gold" />
-          <p className="text-xs font-bold text-white/30 uppercase tracking-wide">Popular</p>
+          <p className="text-xs font-bold text-white/30 uppercase tracking-wide">Popular This Week</p>
         </div>
 
         <div className="flex flex-col gap-3">

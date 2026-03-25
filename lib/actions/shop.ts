@@ -634,59 +634,115 @@ export async function getPopularItems(limit = 5): Promise<{
 
   const admin = createAdminClient()
 
-  // Fetch pack prompt IDs to exclude from the individual prompts list
-  const { data: ppData } = await admin.from('pack_prompts').select('prompt_id')
-  const packPromptIds = (ppData ?? []).map((r: any) => r.prompt_id as string)
+  // Window: last 7 days
+  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
-  const [promptsResult, packsResult, savedPromptsResult, savedPacksResult] = await Promise.all([
-    (async () => {
-      let q = admin
-        .from('prompts')
-        .select('*, creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at)')
-        .not('creator_id', 'is', null)
-        .eq('visibility', 'public')
-        .gt('add_count', 0)
-        .order('add_count', { ascending: false })
-        .limit(limit)
-      if (packPromptIds.length > 0) {
-        q = q.not('id', 'in', `(${packPromptIds.join(',')})`)
-      }
-      return q
-    })(),
+  // All group_prompts rows from the past week — this is the source of truth for
+  // "what got added this week". We pull prompt_id + group_id so we can count
+  // both individual-prompt popularity and pack popularity (via pack_prompts join).
+  const { data: recentAdds } = await admin
+    .from('group_prompts')
+    .select('prompt_id, group_id')
+    .gte('added_at', oneWeekAgo)
 
-    admin
-      .from('prompt_packs')
-      .select(`
-        *,
-        creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at),
-        prompt_count:pack_prompts(count)
-      `)
-      .eq('visibility', 'public')
-      .gt('add_count', 0)
-      .order('add_count', { ascending: false })
-      .limit(limit),
+  if (!recentAdds || recentAdds.length === 0) return { prompts: [], packs: [] }
 
+  // Count how many group additions each prompt received this week
+  const promptWeekCount: Record<string, number> = {}
+  for (const row of recentAdds) {
+    promptWeekCount[row.prompt_id] = (promptWeekCount[row.prompt_id] ?? 0) + 1
+  }
+
+  const recentPromptIds = Object.keys(promptWeekCount)
+
+  // Resolve which of the recent prompts belong to packs (run in parallel with
+  // getting all pack-prompt IDs for the individual-prompt exclusion list)
+  const [packPromptRows, allPackPromptsResult, savedPromptsResult, savedPacksResult] = await Promise.all([
+    admin.from('pack_prompts').select('pack_id, prompt_id').in('prompt_id', recentPromptIds),
+    admin.from('pack_prompts').select('prompt_id'),
     admin.from('saved_prompts').select('prompt_id').eq('user_id', user.id),
     admin.from('saved_packs').select('pack_id').eq('user_id', user.id),
+  ])
+
+  const allPackPromptIds = new Set(
+    (allPackPromptsResult.data ?? []).map((r: any) => r.prompt_id as string)
+  )
+
+  // Count distinct groups per pack this week
+  const packGroupSets: Record<string, Set<string>> = {}
+  for (const pp of packPromptRows.data ?? []) {
+    if (!packGroupSets[pp.pack_id]) packGroupSets[pp.pack_id] = new Set()
+    // Every group that added this prompt contributes to the pack's weekly count
+    for (const row of recentAdds) {
+      if (row.prompt_id === pp.prompt_id) {
+        packGroupSets[pp.pack_id].add(row.group_id)
+      }
+    }
+  }
+
+  // Top individual prompt IDs (not pack prompts), sorted descending by week count
+  const topPromptIds = Object.entries(promptWeekCount)
+    .filter(([id]) => !allPackPromptIds.has(id))
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, limit)
+    .map(([id]) => id)
+
+  // Top pack IDs sorted descending by distinct-group week count
+  const topPackIds = Object.entries(packGroupSets)
+    .map(([pack_id, groups]) => ({ pack_id, count: groups.size }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit)
+    .map(({ pack_id }) => pack_id)
+
+  // Fetch actual rows (only if we have IDs to look up)
+  const [promptsResult, packsResult] = await Promise.all([
+    topPromptIds.length > 0
+      ? admin
+          .from('prompts')
+          .select('*, creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at)')
+          .in('id', topPromptIds)
+          .eq('visibility', 'public')
+      : Promise.resolve({ data: [] }),
+
+    topPackIds.length > 0
+      ? admin
+          .from('prompt_packs')
+          .select(`
+            *,
+            creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at),
+            prompt_count:pack_prompts(count)
+          `)
+          .in('id', topPackIds)
+          .eq('visibility', 'public')
+      : Promise.resolve({ data: [] }),
   ])
 
   const savedPromptIds = new Set((savedPromptsResult.data ?? []).map((r: any) => r.prompt_id))
   const savedPackIds   = new Set((savedPacksResult.data ?? []).map((r: any) => r.pack_id))
 
-  const prompts: ShopPrompt[] = (promptsResult.data ?? []).map((p: any) => ({
-    ...p,
-    add_count: p.add_count ?? 0,
-    creator:  p.creator ?? undefined,
-    is_saved: savedPromptIds.has(p.id),
-  }))
+  // Re-sort by weekly count (DB returns .in() results in undefined order)
+  const promptsMap = Object.fromEntries((promptsResult.data ?? []).map((p: any) => [p.id, p]))
+  const prompts: ShopPrompt[] = topPromptIds
+    .map((id) => promptsMap[id])
+    .filter(Boolean)
+    .map((p: any) => ({
+      ...p,
+      add_count: promptWeekCount[p.id] ?? 0,
+      creator:   p.creator ?? undefined,
+      is_saved:  savedPromptIds.has(p.id),
+    }))
 
-  const packs: PromptPack[] = (packsResult.data ?? []).map((p: any) => ({
-    ...p,
-    add_count:    p.add_count ?? 0,
-    prompt_count: Array.isArray(p.prompt_count) ? p.prompt_count[0]?.count ?? 0 : (p.prompt_count ?? 0),
-    creator:      p.creator ?? undefined,
-    is_saved:     savedPackIds.has(p.id),
-  }))
+  const packsMap = Object.fromEntries((packsResult.data ?? []).map((p: any) => [p.id, p]))
+  const packs: PromptPack[] = topPackIds
+    .map((id) => packsMap[id])
+    .filter(Boolean)
+    .map((p: any) => ({
+      ...p,
+      add_count:    packGroupSets[p.id]?.size ?? 0,
+      prompt_count: Array.isArray(p.prompt_count) ? p.prompt_count[0]?.count ?? 0 : (p.prompt_count ?? 0),
+      creator:      p.creator ?? undefined,
+      is_saved:     savedPackIds.has(p.id),
+    }))
 
   return { prompts, packs }
 }
