@@ -91,6 +91,7 @@ export type ShopPrompt = {
   visibility: 'public' | 'private'
   creator_id: string | null
   likes: number
+  add_count: number
   created_at: string
   creator?: Profile
   is_saved?: boolean
@@ -102,6 +103,7 @@ export type PromptPack = {
   name: string
   description: string | null
   visibility: 'public' | 'private'
+  add_count: number
   created_at: string
   creator?: Profile
   prompt_count?: number

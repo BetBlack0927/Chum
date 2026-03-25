@@ -2,12 +2,13 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { getShopFeed, getFollowingFeed, getSavedItems } from '@/lib/actions/shop'
+import { getShopFeed, getFollowingFeed, getSavedItems, getPopularItems } from '@/lib/actions/shop'
 import { TopBar } from '@/components/navigation/TopBar'
 import { ShopFilters } from '@/components/shop/ShopFilters'
 import { ShopClient } from './ShopClient'
 import { FollowingFeedStrip } from './FollowingFeedStrip'
 import { ShopTabSwitcher } from './ShopTabSwitcher'
+import { PopularSection } from './PopularSection'
 import { Suspense } from 'react'
 
 interface Props {
@@ -26,10 +27,14 @@ export default async function ShopPage({ searchParams }: Props) {
   const category = params.category ?? undefined
   const query    = params.q ?? undefined
 
-  const [browseData, followingFeed, savedData] = await Promise.all([
+  // Only fetch popular items on the unfiltered browse tab (no search / category / type filters)
+  const showPopular = tab === 'browse' && !query && !category && type === 'all'
+
+  const [browseData, followingFeed, savedData, popularData] = await Promise.all([
     tab === 'browse' ? getShopFeed({ type, category, query }) : Promise.resolve({ prompts: [], packs: [] }),
     tab === 'browse' ? getFollowingFeed(user.id) : Promise.resolve({ prompts: [], packs: [] }),
     tab === 'saved'  ? getSavedItems(user.id)    : Promise.resolve({ prompts: [], packs: [] }),
+    showPopular      ? getPopularItems(4)         : Promise.resolve({ prompts: [], packs: [] }),
   ])
 
   const hasFollowingFeed = followingFeed.prompts.length > 0 || followingFeed.packs.length > 0
@@ -71,6 +76,14 @@ export default async function ShopPage({ searchParams }: Props) {
                   packs={followingFeed.packs}
                 />
               </section>
+            )}
+
+            {/* Popular section — only on unfiltered browse */}
+            {showPopular && (
+              <PopularSection
+                prompts={popularData.prompts}
+                packs={popularData.packs}
+              />
             )}
 
             {/* Main browse results */}

@@ -515,6 +515,12 @@ export async function addPackToGroups(packId: string, groupIds: string[]): Promi
 
   if (error) return { success: false, error: error.message }
 
+  // Increment pack-level add_count by the number of groups selected
+  await admin.rpc('increment_pack_add_count', {
+    p_pack_id: packId,
+    p_delta:   groupIds.length,
+  })
+
   groupIds.forEach((id) => revalidatePath(`/groups/${id}`))
   return { success: true, addedCount: packPrompts.length }
 }
@@ -614,6 +620,75 @@ export async function getMyGroupsForPack(packId: string): Promise<{
     // Consider "already added" if at least one prompt from the pack is in the group
     alreadyAdded: (countByGroup[g.id] ?? 0) >= packPromptIds.length,
   }))
+}
+
+// ─── Popular items ────────────────────────────────────────────────────────────
+
+export async function getPopularItems(limit = 5): Promise<{
+  prompts: ShopPrompt[]
+  packs: PromptPack[]
+}> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { prompts: [], packs: [] }
+
+  const admin = createAdminClient()
+
+  // Fetch pack prompt IDs to exclude from the individual prompts list
+  const { data: ppData } = await admin.from('pack_prompts').select('prompt_id')
+  const packPromptIds = (ppData ?? []).map((r: any) => r.prompt_id as string)
+
+  const [promptsResult, packsResult, savedPromptsResult, savedPacksResult] = await Promise.all([
+    (async () => {
+      let q = admin
+        .from('prompts')
+        .select('*, creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at)')
+        .not('creator_id', 'is', null)
+        .eq('visibility', 'public')
+        .gt('add_count', 0)
+        .order('add_count', { ascending: false })
+        .limit(limit)
+      if (packPromptIds.length > 0) {
+        q = q.not('id', 'in', `(${packPromptIds.join(',')})`)
+      }
+      return q
+    })(),
+
+    admin
+      .from('prompt_packs')
+      .select(`
+        *,
+        creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at),
+        prompt_count:pack_prompts(count)
+      `)
+      .eq('visibility', 'public')
+      .gt('add_count', 0)
+      .order('add_count', { ascending: false })
+      .limit(limit),
+
+    admin.from('saved_prompts').select('prompt_id').eq('user_id', user.id),
+    admin.from('saved_packs').select('pack_id').eq('user_id', user.id),
+  ])
+
+  const savedPromptIds = new Set((savedPromptsResult.data ?? []).map((r: any) => r.prompt_id))
+  const savedPackIds   = new Set((savedPacksResult.data ?? []).map((r: any) => r.pack_id))
+
+  const prompts: ShopPrompt[] = (promptsResult.data ?? []).map((p: any) => ({
+    ...p,
+    add_count: p.add_count ?? 0,
+    creator:  p.creator ?? undefined,
+    is_saved: savedPromptIds.has(p.id),
+  }))
+
+  const packs: PromptPack[] = (packsResult.data ?? []).map((p: any) => ({
+    ...p,
+    add_count:    p.add_count ?? 0,
+    prompt_count: Array.isArray(p.prompt_count) ? p.prompt_count[0]?.count ?? 0 : (p.prompt_count ?? 0),
+    creator:      p.creator ?? undefined,
+    is_saved:     savedPackIds.has(p.id),
+  }))
+
+  return { prompts, packs }
 }
 
 // ─── Saved items ──────────────────────────────────────────────────────────────

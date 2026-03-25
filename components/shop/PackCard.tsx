@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { Bookmark, BookmarkCheck, Layers, Plus } from 'lucide-react'
+import { Bookmark, BookmarkCheck, Layers, Plus, Users } from 'lucide-react'
 import { toggleSavePack } from '@/lib/actions/shop'
 import { cn } from '@/lib/utils'
 import type { PromptPack } from '@/types/database'
@@ -50,18 +50,26 @@ export function PackCard({ pack, onAddToGroup }: PackCardProps) {
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-1 border-t border-white/6">
-        {pack.creator ? (
-          <Link
-            href={`/creators/${pack.creator.username}`}
-            className="text-xs text-white/40 hover:text-white/70 transition-colors"
-          >
-            @{pack.creator.username}
-          </Link>
-        ) : (
-          <span className="text-xs text-white/20">Daily Winner</span>
-        )}
+        <div className="flex flex-col gap-0.5 min-w-0">
+          {pack.creator ? (
+            <Link
+              href={`/creators/${pack.creator.username}`}
+              className="text-xs text-white/40 hover:text-white/70 transition-colors"
+            >
+              @{pack.creator.username}
+            </Link>
+          ) : (
+            <span className="text-xs text-white/20">Daily Winner</span>
+          )}
+          {(pack.add_count ?? 0) > 0 && (
+            <span className="flex items-center gap-1 text-[10px] text-white/25">
+              <Users size={9} />
+              Added to {pack.add_count} {pack.add_count === 1 ? 'group' : 'groups'}
+            </span>
+          )}
+        </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={handleSave}
             disabled={isPending}
