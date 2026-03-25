@@ -197,7 +197,7 @@ export function ShareResult({
       {/* ── Preview modal ── */}
       {imageUrl && (
         <div
-          className="fixed inset-0 bg-black/85 z-50 flex items-end sm:items-center justify-center p-4"
+          className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-6"
           onClick={() => setImageUrl(null)}
         >
           <div
@@ -208,6 +208,7 @@ export function ShareResult({
               src={imageUrl}
               alt="Share card preview"
               className="w-full rounded-3xl shadow-2xl ring-1 ring-white/10"
+              style={{ maxHeight: '60vh', objectFit: 'contain' }}
             />
 
             <div className="flex gap-3 w-full">
