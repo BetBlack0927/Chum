@@ -2,13 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Trophy, Users, PlusCircle, User } from 'lucide-react'
+import { Trophy, Store, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { href: '/groups',     icon: Trophy,      label: 'Groups'  },
-  { href: '/groups/new', icon: PlusCircle,  label: 'Join/Create' },
-  { href: '/profile',    icon: User,        label: 'Profile' },
+  { href: '/groups',  icon: Trophy, label: 'Groups'  },
+  { href: '/shop',    icon: Store,  label: 'Shop'    },
+  { href: '/profile', icon: User,   label: 'Profile' },
 ]
 
 export function BottomNav() {
@@ -21,7 +21,7 @@ export function BottomNav() {
     >
       <div className="w-full max-w-[430px] mx-auto flex justify-around items-center px-2 pt-2">
         {navItems.map(({ href, icon: Icon, label }) => {
-          const isActive = pathname === href || (href !== '/groups' && pathname.startsWith(href))
+          const isActive = pathname === href || (href !== '/groups' && pathname !== '/groups/new' && pathname.startsWith(href))
 
           return (
             <Link

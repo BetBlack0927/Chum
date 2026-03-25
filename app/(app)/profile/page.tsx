@@ -1,11 +1,14 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { TopBar } from '@/components/navigation/TopBar'
 import { AvatarUpload } from '@/components/profile/AvatarUpload'
 import { Card } from '@/components/ui/Card'
 import { signOut } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/Button'
-import { LogOut } from 'lucide-react'
+import { BioEditor } from './BioEditor'
+import { LogOut, Store, MessageSquare, Layers, ExternalLink } from 'lucide-react'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -18,11 +21,21 @@ export default async function ProfilePage() {
     .eq('id', user.id)
     .single()
 
+  const admin = createAdminClient()
+  const [promptCountResult, packCountResult] = await Promise.all([
+    admin.from('prompts').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
+    admin.from('prompt_packs').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
+  ])
+
+  const promptCount = promptCountResult.count ?? 0
+  const packCount   = packCountResult.count   ?? 0
+
   return (
     <div>
       <TopBar title="Profile" />
 
       <div className="px-4 pt-6 flex flex-col gap-4">
+        {/* Avatar + name */}
         <div className="flex flex-col items-center gap-2 py-6">
           <AvatarUpload
             userId={user.id}
@@ -36,6 +49,49 @@ export default async function ProfilePage() {
           </div>
         </div>
 
+        {/* Bio editor */}
+        <BioEditor currentBio={profile?.bio ?? null} />
+
+        {/* Creator section */}
+        <div className="rounded-2xl border border-white/8 bg-surface p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Store size={16} className="text-brand-light" />
+              <p className="text-xs font-bold text-white/50 uppercase tracking-wide">Creator</p>
+            </div>
+            {profile?.username && (
+              <Link
+                href={`/creators/${profile.username}`}
+                className="flex items-center gap-1 text-xs text-white/30 hover:text-white/60 transition-colors"
+              >
+                View profile
+                <ExternalLink size={11} />
+              </Link>
+            )}
+          </div>
+
+          <div className="flex gap-4 mb-4">
+            <div className="text-center flex-1">
+              <p className="font-bold text-white text-lg">{promptCount}</p>
+              <p className="text-xs text-white/40">Prompts</p>
+            </div>
+            <div className="w-px bg-white/10" />
+            <div className="text-center flex-1">
+              <p className="font-bold text-white text-lg">{packCount}</p>
+              <p className="text-xs text-white/40">Packs</p>
+            </div>
+          </div>
+
+          <Link
+            href="/shop/create"
+            className="flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-brand/15 text-brand-light text-sm font-semibold hover:bg-brand/25 transition-colors"
+          >
+            <MessageSquare size={15} />
+            Create Prompt or Pack
+          </Link>
+        </div>
+
+        {/* Account info */}
         <Card>
           <p className="text-xs font-bold text-white/30 uppercase tracking-wide mb-3">Account</p>
           <div className="space-y-2">

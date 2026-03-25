@@ -80,3 +80,43 @@ export type RoundResult = {
   winner: NominationResult | null
   total_votes: number
 }
+
+// ─── Prompt Shop types ────────────────────────────────────────────────────────
+
+export type ShopPrompt = {
+  id: string
+  text: string
+  category: string | null
+  description: string | null
+  visibility: 'public' | 'private'
+  creator_id: string | null
+  likes: number
+  created_at: string
+  creator?: Profile
+  is_saved?: boolean
+}
+
+export type PromptPack = {
+  id: string
+  creator_id: string
+  name: string
+  description: string | null
+  visibility: 'public' | 'private'
+  created_at: string
+  creator?: Profile
+  prompt_count?: number
+  is_saved?: boolean
+}
+
+export type PackWithPrompts = PromptPack & {
+  prompts: ShopPrompt[]
+}
+
+export type CreatorProfile = Profile & {
+  bio: string | null
+  follower_count: number
+  following_count: number
+  prompt_count: number
+  pack_count: number
+  is_following?: boolean
+}

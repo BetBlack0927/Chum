@@ -116,8 +116,44 @@ async function pickPromptForGroup(
     }
   }
 
-  // Fetch candidate prompts
-  const { data: allPrompts, error: promptsError } = await admin.from('prompts').select('id, category')
+  // Fetch group-assigned shop prompts (these are prioritized over system prompts)
+  const { data: groupAssignedRows } = await admin
+    .from('group_prompts')
+    .select('prompt_id, prompts(id, category)')
+    .eq('group_id', groupId)
+
+  const assignedPrompts = (groupAssignedRows ?? [])
+    .map((r: any) => r.prompts)
+    .filter(Boolean) as { id: string; category: string | null }[]
+
+  // Fresh assigned prompts (not used in last 60 days)
+  const freshAssigned = assignedPrompts.filter((p) => !recentIds.has(p.id))
+
+  // Priority 0: use assigned shop prompts first (they were explicitly chosen)
+  if (freshAssigned.length > 0) {
+    // Respect preferred category within assigned prompts if possible
+    if (useCategory) {
+      const fresh = freshAssigned.filter((p) => p.category === useCategory)
+      if (fresh.length > 0) return fresh[Math.floor(Math.random() * fresh.length)].id
+    }
+    // Any fresh assigned prompt
+    return freshAssigned[Math.floor(Math.random() * freshAssigned.length)].id
+  }
+
+  // All assigned prompts were recently used — allow repeats before falling back
+  if (assignedPrompts.length > 0) {
+    if (useCategory) {
+      const cat = assignedPrompts.filter((p) => p.category === useCategory)
+      if (cat.length > 0) return cat[Math.floor(Math.random() * cat.length)].id
+    }
+    return assignedPrompts[Math.floor(Math.random() * assignedPrompts.length)].id
+  }
+
+  // No assigned prompts — fall back to system prompts (creator_id IS NULL)
+  const { data: allPrompts, error: promptsError } = await admin
+    .from('prompts')
+    .select('id, category')
+    .is('creator_id', null)
   
   if (promptsError) {
     console.error('Error fetching prompts:', promptsError)
