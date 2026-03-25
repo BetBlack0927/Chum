@@ -45,11 +45,10 @@ export default async function HistoryPage({ params }: Props) {
             </p>
 
             <div className="flex flex-col gap-4">
-              {history.map(({ round, nominations, winner, totalVotes }) => (
+              {history.map(({ round, winner, totalVotes }) => (
                 <HistoryCard
                   key={round.id}
                   round={round}
-                  nominations={nominations}
                   winner={winner}
                   totalVotes={totalVotes}
                   userId={user.id}
@@ -63,9 +62,8 @@ export default async function HistoryPage({ params }: Props) {
   )
 }
 
-function HistoryCard({ round, nominations, winner, totalVotes, userId }: {
+function HistoryCard({ round, winner, totalVotes, userId }: {
   round:       any
-  nominations: any[]
   winner:      any | null
   totalVotes:  number
   userId:      string
@@ -108,32 +106,6 @@ function HistoryCard({ round, nominations, winner, totalVotes, userId }: {
               </p>
             </div>
           </div>
-
-          {/* Other nominations */}
-          {nominations.length > 1 && (
-            <details className="mt-3">
-              <summary className="text-xs text-white/30 hover:text-white/50 cursor-pointer select-none">
-                See all {nominations.length} nominations ↓
-              </summary>
-              <div className="flex flex-col gap-2 mt-2 pl-1">
-                {nominations
-                  .filter((n) => n.profile.id !== winner.profile.id)
-                  .map((n) => (
-                    <div key={n.profile.id} className="flex items-center gap-2">
-                      <Avatar
-                        username={n.profile.username}
-                        color={n.profile.avatar_color || getAvatarColor(n.profile.id)}
-                        url={n.profile.avatar_url}
-                        size="sm"
-                      />
-                      <span className="text-xs text-white/50">
-                        @{n.profile.username} — {n.vote_count} vote{n.vote_count !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </details>
-          )}
         </div>
       ) : (
         <div className="px-4 py-3">

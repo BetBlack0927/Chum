@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { getCurrentPhase, type Phase } from '@/lib/phases'
 import { PhaseIndicator } from '@/components/rounds/PhaseIndicator'
 import { VotingInterface } from '@/components/rounds/VotingInterface'
@@ -36,11 +37,27 @@ export function PhaseGate({
   roundId, groupId, promptText, hasRerolled, nextCategory,
   roundData, memberProfiles, userId, isAdmin, memberCount,
 }: PhaseGateProps) {
+  const router = useRouter()
   const [phase, setPhase] = useState<Phase | null>(null)
+  const [hasRefreshedForResults, setHasRefreshedForResults] = useState(false)
 
   useEffect(() => {
     setPhase(getCurrentPhase())
+    const timer = setInterval(() => {
+      setPhase(getCurrentPhase())
+    }, 30_000)
+    return () => clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    if (phase === 'results' && !hasRefreshedForResults) {
+      router.refresh()
+      setHasRefreshedForResults(true)
+    }
+    if (phase !== 'results' && hasRefreshedForResults) {
+      setHasRefreshedForResults(false)
+    }
+  }, [phase, hasRefreshedForResults, router])
 
   // Render nothing until we've detected the local phase — avoids hydration mismatches
   if (!phase) {

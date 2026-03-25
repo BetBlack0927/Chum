@@ -49,6 +49,14 @@ export function formatRoundDate(dateStr: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+// Format a Date as local YYYY-MM-DD (avoids UTC day rollover)
+export function toLocalDateKey(date: Date = new Date()): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // Truncate text with ellipsis
 export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text

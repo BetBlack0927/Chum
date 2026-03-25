@@ -6,12 +6,13 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { RoundWithPrompt, NominationResult, Profile } from '@/types/database'
 import { VALID_CATEGORIES, type CategoryChoice } from '@/lib/categories'
+import { toLocalDateKey } from '@/lib/utils'
 
 // ─── Get or create today's round ─────────────────────────────────────────────
 
 export async function getOrCreateTodayRound(groupId: string): Promise<RoundWithPrompt | null> {
   const admin = createAdminClient()
-  const today = new Date().toISOString().split('T')[0]
+  const today = toLocalDateKey()
 
   const { data: existing } = await admin
     .from('rounds')
@@ -25,7 +26,7 @@ export async function getOrCreateTodayRound(groupId: string): Promise<RoundWithP
   // Check yesterday's round for a winner-chosen category
   const yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = yesterday.toISOString().split('T')[0]
+  const yesterdayStr = toLocalDateKey(yesterday)
 
   const { data: previousRound } = await admin
     .from('rounds')
@@ -85,7 +86,7 @@ async function pickPromptForGroup(
     .from('rounds')
     .select('prompt_id')
     .eq('group_id', groupId)
-    .gte('date', cutoff.toISOString().split('T')[0])
+    .gte('date', toLocalDateKey(cutoff))
 
   const recentIds = new Set((recentRounds ?? []).map((r) => r.prompt_id))
 
@@ -438,7 +439,7 @@ async function ensureRevealedVoterId(
 
 export async function getGroupHistory(groupId: string) {
   const admin = createAdminClient()
-  const today = new Date().toISOString().split('T')[0]
+  const today = toLocalDateKey()
 
   const { data: rounds } = await admin
     .from('rounds')

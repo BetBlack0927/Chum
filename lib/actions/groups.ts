@@ -6,6 +6,7 @@ import { unstable_cache } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { VALID_CATEGORIES } from '@/lib/categories'
+import { toLocalDateKey } from '@/lib/utils'
 
 export async function createGroup(formData: FormData) {
   const name        = (formData.get('name')        as string).trim()
@@ -428,7 +429,7 @@ export async function getGroupStreaks(
   if (groups.length === 0) return {}
 
   const admin  = createAdminClient()
-  const today  = new Date().toISOString().split('T')[0]
+  const today  = toLocalDateKey()
   const groupIds = groups.map((g) => g.id)
 
   // Fetch completed rounds (not today, since voting may still be open)
