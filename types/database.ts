@@ -135,3 +135,15 @@ export type CreatorProfile = Profile & {
   pack_count: number
   is_following?: boolean
 }
+
+export type ScrapbookEntry = {
+  id: string
+  user_id: string
+  round_id: string
+  prompt_text: string
+  group_name: string | null
+  vote_count: number
+  total_votes: number
+  round_date: string
+  saved_at: string
+}

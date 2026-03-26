@@ -5,7 +5,11 @@ import Link from 'next/link'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { CategoryPicker } from '@/components/rounds/CategoryPicker'
+<<<<<<< HEAD
 import { ScrapbookButton } from '@/components/rounds/ScrapbookButton'
+=======
+import { AddToScrapbookButton } from '@/components/scrapbook/AddToScrapbookButton'
+>>>>>>> b7f124a (scrapbook v1)
 import { CATEGORY_META } from '@/lib/categories'
 import { pickExposedFlavorLabel, pickWinnerFlavorLabel } from '@/lib/resultFlavorLabels'
 import { getAvatarColor, cn } from '@/lib/utils'
@@ -168,6 +172,15 @@ export function WinnerReveal({
             ))}
           </div>
         </div>
+      )}
+
+      {/* ── Add to Scrapbook (winner only) ── */}
+      {winner && isCurrentUserWinner && (
+        <AddToScrapbookButton
+          roundId={roundId}
+          groupId={groupId}
+          initialSaved={isInScrapbook}
+        />
       )}
 
       {/* ── Category picker / status ── */}

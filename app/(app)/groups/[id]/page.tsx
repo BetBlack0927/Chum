@@ -4,7 +4,11 @@ import { createClient } from '@/lib/supabase/server'
 import { getGroupDetails } from '@/lib/actions/groups'
 import { getOrCreateTodayRound, getRoundData } from '@/lib/actions/rounds'
 import { getPromptLikeInfo } from '@/lib/actions/prompts'
+<<<<<<< HEAD
 import { isRoundInScrapbook } from '@/lib/actions/scrapbook'
+=======
+import { checkScrapbookEntry } from '@/lib/actions/scrapbook'
+>>>>>>> b7f124a (scrapbook v1)
 import { TopBar } from '@/components/navigation/TopBar'
 import { PhaseGate } from '@/components/rounds/PhaseGate'
 import { PromptLikeButton } from '@/components/rounds/PromptLikeButton'
@@ -36,10 +40,17 @@ export default async function GroupDetailPage({ params }: Props) {
   const isAdmin = userRole === 'admin'
 
   // Parallelize round-dependent queries
+<<<<<<< HEAD
   const [roundData, promptLikeInfo, inScrapbook] = await Promise.all([
     round ? getRoundData(round.id, userId) : Promise.resolve(null),
     round ? getPromptLikeInfo(round.prompt_id) : Promise.resolve(null),
     round ? isRoundInScrapbook(round.id) : Promise.resolve(false),
+=======
+  const [roundData, promptLikeInfo, isInScrapbook] = await Promise.all([
+    round ? getRoundData(round.id, userId) : Promise.resolve(null),
+    round ? getPromptLikeInfo(round.prompt_id) : Promise.resolve(null),
+    round ? checkScrapbookEntry(round.id, userId) : Promise.resolve(false),
+>>>>>>> b7f124a (scrapbook v1)
   ])
 
   // Flat list of member profiles for the voting UI
@@ -128,7 +139,11 @@ export default async function GroupDetailPage({ params }: Props) {
             userId={userId}
             isAdmin={isAdmin}
             memberCount={members.length}
+<<<<<<< HEAD
             isInScrapbook={inScrapbook}
+=======
+            isInScrapbook={isInScrapbook}
+>>>>>>> b7f124a (scrapbook v1)
           />
         )}
 
