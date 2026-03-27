@@ -27,8 +27,6 @@ export default async function ProfilePage() {
 
   const admin = createAdminClient()
   const [
-    promptCountResult,
-    packCountResult,
     followerCountResult,
     followingCountResult,
     scrapbookEntries,
@@ -36,8 +34,6 @@ export default async function ProfilePage() {
     myPacks,
     myPrivatePrompts,
   ] = await Promise.all([
-    admin.from('prompts').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
-    admin.from('prompt_packs').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
     admin.from('creator_follows').select('id', { count: 'exact', head: true }).eq('following_id', user.id),
     admin.from('creator_follows').select('id', { count: 'exact', head: true }).eq('follower_id', user.id),
     getScrapbook(user.id),
@@ -46,8 +42,6 @@ export default async function ProfilePage() {
     getMyPrivatePrompts(),
   ])
 
-  const promptCount    = promptCountResult.count    ?? 0
-  const packCount      = packCountResult.count      ?? 0
   const followerCount  = followerCountResult.count  ?? 0
   const followingCount = followingCountResult.count ?? 0
 
@@ -82,15 +76,13 @@ export default async function ProfilePage() {
             </div>
           </div>
 
-          {/* Followers/following tappable stats + prompts/packs */}
+          {/* Followers / following — prompts & packs counts are in tabs below */}
           <div className="mb-4">
             <FollowStats
               userId={user.id}
               currentUserId={user.id}
               followerCount={followerCount}
               followingCount={followingCount}
-              promptCount={promptCount}
-              packCount={packCount}
             />
           </div>
 

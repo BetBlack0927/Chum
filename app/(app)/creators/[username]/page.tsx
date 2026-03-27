@@ -74,8 +74,6 @@ export default async function CreatorPage({ params }: Props) {
             currentUserId={user.id}
             followerCount={profile.follower_count}
             followingCount={profile.following_count}
-            promptCount={profile.prompt_count}
-            packCount={profile.pack_count}
           />
 
           {/* Follow button (larger, centered) — only on non-own profiles */}
