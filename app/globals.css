@@ -9,7 +9,8 @@
   --color-surface: #14141f;
   --color-surface-2: #1e1e2e;
   --color-surface-3: #252538;
-  --color-app-bg: #0a0a12;
+  /* Near-black canvas — reads as black, not harsh OLED #000 */
+  --color-app-bg: #050506;
   --color-success: #10b981;
   --color-danger: #ef4444;
   --color-info: #3b82f6;
@@ -20,7 +21,7 @@
 }
 
 :root {
-  --bg: #0a0a12;
+  --bg: #050506;
   --surface: #14141f;
   --surface-2: #1e1e2e;
   --surface-3: #252538;
