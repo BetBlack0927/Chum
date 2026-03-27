@@ -2,36 +2,37 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getUserGroups, getGroupStreaks } from '@/lib/actions/groups'
-import { Badge } from '@/components/ui/Badge'
+import { getTodayPromptPreviewByGroup } from '@/lib/actions/rounds'
 import { Avatar } from '@/components/ui/Avatar'
 import { PhasePill } from '@/components/ui/PhasePill'
-import { Users, Plus, Trophy, ChevronRight } from 'lucide-react'
+import { GroupListCard } from '@/components/groups/GroupListCard'
+import { Plus } from 'lucide-react'
 
 export default async function GroupsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Parallelize independent queries
   const [profileResult, groups] = await Promise.all([
     supabase
       .from('profiles')
       .select('username, avatar_color, avatar_url')
       .eq('id', user.id)
       .single(),
-    getUserGroups()
+    getUserGroups(),
   ])
 
   const profile = profileResult.data
 
-  // Fetch streaks for all groups (2 DB queries regardless of group count)
   const streaks = await getGroupStreaks(
-    (groups as any[]).map((g: any) => ({ id: g.id, member_count: g.member_count }))
+    (groups as any[]).map((g: any) => ({ id: g.id, member_count: g.member_count })),
   )
+
+  const groupIds = (groups as any[]).map((g: any) => g.id)
+  const promptByGroup = await getTodayPromptPreviewByGroup(groupIds)
 
   return (
     <div className="flex flex-col">
-      {/* Header */}
       <div className="px-5 pt-6 pb-4">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-3">
@@ -49,12 +50,10 @@ export default async function GroupsPage() {
             </div>
           </div>
 
-          {/* Today's phase pill — detected client-side for local timezone */}
           <PhasePill variant="header" />
         </div>
       </div>
 
-      {/* Groups list */}
       <div className="px-4 pb-4">
         {groups.length === 0 ? (
           <EmptyState />
@@ -63,13 +62,22 @@ export default async function GroupsPage() {
             <p className="text-xs font-bold text-white/30 uppercase tracking-wide px-1">
               Your Groups
             </p>
-            {groups.map((group: any) => (
-              <GroupCard key={group.id} group={group} streak={streaks[group.id] ?? 0} />
+            {(groups as any[]).map((group: any) => (
+              <GroupListCard
+                key={group.id}
+                group={{
+                  id:           group.id,
+                  name:         group.name,
+                  avatar_url:   group.avatar_url ?? null,
+                  member_count: group.member_count,
+                }}
+                streak={streaks[group.id] ?? 0}
+                promptText={promptByGroup[group.id] ?? null}
+              />
             ))}
           </div>
         )}
 
-        {/* Create/Join button */}
         <Link
           href="/groups/new"
           className="mt-4 flex items-center justify-center gap-2 h-12 rounded-2xl bg-brand/15 border border-brand/30 text-brand-light font-semibold text-sm hover:bg-brand/25 transition-colors active:scale-95"
@@ -79,50 +87,6 @@ export default async function GroupsPage() {
         </Link>
       </div>
     </div>
-  )
-}
-
-function GroupCard({ group, streak }: {
-  group: any
-  streak: number
-}) {
-  return (
-    <Link
-      href={`/groups/${group.id}`}
-      className="flex items-center gap-4 bg-surface rounded-2xl border border-white/8 p-4 hover:border-white/14 hover:bg-surface-2 transition-all active:scale-[0.98]"
-    >
-      {/* Group avatar */}
-      <div className="w-12 h-12 rounded-xl shrink-0 overflow-hidden border border-white/8">
-        {group.avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={group.avatar_url} alt={group.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-brand/30 to-gold/20 flex items-center justify-center text-xl font-black text-white">
-            {group.name.charAt(0).toUpperCase()}
-          </div>
-        )}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <p className="font-bold text-white text-sm truncate">{group.name}</p>
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <Users size={11} className="text-white/30" />
-          <span className="text-xs text-white/40">{group.member_count} member{group.member_count !== 1 ? 's' : ''}</span>
-          <span className="text-white/20">·</span>
-          <PhasePill variant="inline" />
-          {streak > 0 && (
-            <>
-              <span className="text-white/20">·</span>
-              <span className="text-xs font-bold text-orange-400">
-                🔥 {streak}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-
-      <ChevronRight size={16} className="text-white/20 shrink-0" />
-    </Link>
   )
 }
 

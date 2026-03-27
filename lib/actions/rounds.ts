@@ -60,6 +60,30 @@ export async function getOrCreateTodayRound(groupId: string): Promise<RoundWithP
   return newRound as RoundWithPrompt
 }
 
+/** Read-only: today's prompt text per group for list previews (does not create rounds). */
+export async function getTodayPromptPreviewByGroup(
+  groupIds: string[],
+): Promise<Record<string, string | null>> {
+  const out: Record<string, string | null> = {}
+  for (const id of groupIds) out[id] = null
+  if (groupIds.length === 0) return out
+
+  const admin = createAdminClient()
+  const today = toLocalDateKey()
+
+  const { data } = await admin
+    .from('rounds')
+    .select('group_id, prompt:prompts(text)')
+    .eq('date', today)
+    .in('group_id', groupIds)
+
+  for (const row of data ?? []) {
+    const text = (row as any).prompt?.text as string | undefined
+    out[row.group_id] = text ?? null
+  }
+  return out
+}
+
 // ─── Pick a prompt, respecting category preference ───────────────────────────
 
 async function pickPromptForGroup(
