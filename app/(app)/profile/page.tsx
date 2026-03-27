@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { TopBar } from '@/components/navigation/TopBar'
 import { AvatarUpload } from '@/components/profile/AvatarUpload'
 import { Card } from '@/components/ui/Card'
@@ -9,7 +8,7 @@ import { signOut } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/Button'
 import { BioEditor } from './BioEditor'
 import { getScrapbook } from '@/lib/actions/scrapbook'
-import { getCreatorPrompts, getCreatorPacks, getMyPrivatePrompts } from '@/lib/actions/shop'
+import { getCreatorPrompts, getCreatorPacks, getMyPrivatePrompts, getFollowCounts } from '@/lib/actions/shop'
 import { CreatorContentClient } from '@/app/(app)/creators/[username]/CreatorContentClient'
 import { FollowStats } from '@/app/(app)/creators/[username]/FollowStats'
 import { LogOut, Store, MessageSquare, ExternalLink } from 'lucide-react'
@@ -25,25 +24,16 @@ export default async function ProfilePage() {
     .eq('id', user.id)
     .single()
 
-  const admin = createAdminClient()
-  const [
-    followerCountResult,
-    followingCountResult,
-    scrapbookEntries,
-    myPrompts,
-    myPacks,
-    myPrivatePrompts,
-  ] = await Promise.all([
-    admin.from('creator_follows').select('id', { count: 'exact', head: true }).eq('following_id', user.id),
-    admin.from('creator_follows').select('id', { count: 'exact', head: true }).eq('follower_id', user.id),
+  const [followCounts, scrapbookEntries, myPrompts, myPacks, myPrivatePrompts] = await Promise.all([
+    getFollowCounts(user.id),
     getScrapbook(user.id),
     getCreatorPrompts(user.id),
     getCreatorPacks(user.id),
     getMyPrivatePrompts(),
   ])
 
-  const followerCount  = followerCountResult.count  ?? 0
-  const followingCount = followingCountResult.count ?? 0
+  const followerCount  = followCounts.followerCount
+  const followingCount = followCounts.followingCount
 
   return (
     <div>

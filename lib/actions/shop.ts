@@ -294,6 +294,25 @@ export async function getPackDetail(packId: string): Promise<PackWithPrompts | n
 
 // ─── Creator Profile ─────────────────────────────────────────────────────────
 
+/** Follower/following counts for a profile (creator_follows has no `id` column — count real columns only). */
+export async function getFollowCounts(userId: string): Promise<{ followerCount: number; followingCount: number }> {
+  const admin = createAdminClient()
+  const [followersResult, followingResult] = await Promise.all([
+    admin
+      .from('creator_follows')
+      .select('follower_id', { count: 'exact', head: true })
+      .eq('following_id', userId),
+    admin
+      .from('creator_follows')
+      .select('following_id', { count: 'exact', head: true })
+      .eq('follower_id', userId),
+  ])
+  return {
+    followerCount:  followersResult.count  ?? 0,
+    followingCount: followingResult.count ?? 0,
+  }
+}
+
 export async function getCreatorProfile(username: string): Promise<CreatorProfile | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -309,9 +328,8 @@ export async function getCreatorProfile(username: string): Promise<CreatorProfil
 
   if (!profile) return null
 
-  const [followersResult, followingResult, promptsResult, packsResult, isFollowingResult] = await Promise.all([
-    admin.from('creator_follows').select('follower_id', { count: 'exact', head: true }).eq('following_id', profile.id),
-    admin.from('creator_follows').select('following_id', { count: 'exact', head: true }).eq('follower_id', profile.id),
+  const [followCounts, promptsResult, packsResult, isFollowingResult] = await Promise.all([
+    getFollowCounts(profile.id),
     admin.from('prompts').select('id', { count: 'exact', head: true }).eq('creator_id', profile.id).eq('visibility', 'public'),
     admin.from('prompt_packs').select('id', { count: 'exact', head: true }).eq('creator_id', profile.id).eq('visibility', 'public'),
     user.id !== profile.id
@@ -322,8 +340,8 @@ export async function getCreatorProfile(username: string): Promise<CreatorProfil
   return {
     ...profile,
     bio: profile.bio ?? null,
-    follower_count:  followersResult.count  ?? 0,
-    following_count: followingResult.count  ?? 0,
+    follower_count:  followCounts.followerCount,
+    following_count: followCounts.followingCount,
     prompt_count:    promptsResult.count    ?? 0,
     pack_count:      packsResult.count      ?? 0,
     is_following:    !!(isFollowingResult as any)?.data,
