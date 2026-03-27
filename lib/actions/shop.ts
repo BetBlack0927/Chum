@@ -339,7 +339,29 @@ export async function getCreatorPrompts(creatorId: string): Promise<ShopPrompt[]
     .eq('visibility', 'public')
     .order('created_at', { ascending: false })
 
-  return data ?? []
+  return (data ?? []).map((p: any) => ({ ...p, add_count: p.add_count ?? 0 }))
+}
+
+/** Fetch the calling user's own private prompts. Only works when called server-side for the owner. */
+export async function getMyPrivatePrompts(): Promise<ShopPrompt[]> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('prompts')
+    .select('*, creator:profiles!creator_id(id, username, avatar_color, avatar_url, created_at)')
+    .eq('creator_id', user.id)
+    .eq('visibility', 'private')
+    .order('created_at', { ascending: false })
+
+  return (data ?? []).map((p: any) => ({
+    ...p,
+    add_count: p.add_count ?? 0,
+    creator: p.creator ?? undefined,
+    is_saved: false,
+  }))
 }
 
 export async function getCreatorPacks(creatorId: string): Promise<PromptPack[]> {

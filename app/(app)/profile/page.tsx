@@ -9,7 +9,7 @@ import { signOut } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/Button'
 import { BioEditor } from './BioEditor'
 import { getScrapbook } from '@/lib/actions/scrapbook'
-import { getCreatorPrompts, getCreatorPacks } from '@/lib/actions/shop'
+import { getCreatorPrompts, getCreatorPacks, getMyPrivatePrompts } from '@/lib/actions/shop'
 import { CreatorContentClient } from '@/app/(app)/creators/[username]/CreatorContentClient'
 import { LogOut, Store, MessageSquare, ExternalLink } from 'lucide-react'
 
@@ -25,12 +25,13 @@ export default async function ProfilePage() {
     .single()
 
   const admin = createAdminClient()
-  const [promptCountResult, packCountResult, scrapbookEntries, myPrompts, myPacks] = await Promise.all([
+  const [promptCountResult, packCountResult, scrapbookEntries, myPrompts, myPacks, myPrivatePrompts] = await Promise.all([
     admin.from('prompts').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
     admin.from('prompt_packs').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
     getScrapbook(user.id),
     getCreatorPrompts(user.id),
     getCreatorPacks(user.id),
+    getMyPrivatePrompts(),
   ])
 
   const promptCount = promptCountResult.count ?? 0
@@ -104,6 +105,7 @@ export default async function ProfilePage() {
           packs={myPacks}
           scrapbookEntries={scrapbookEntries}
           scrapbookReadonly={false}
+          privatePrompts={myPrivatePrompts}
         />
 
         {/* Account info */}
