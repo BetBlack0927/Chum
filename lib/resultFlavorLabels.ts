@@ -3,8 +3,6 @@
 export const WINNER_FLAVOR_LABELS = [
   'Main character today 🎬',
   'Chosen one 👑',
-  'Carried by the group 💀',
-  'Plot armor activated 🛡️',
   'Certified menace 😈',
   'MVP of the day 🏆',
   'Everyone agreed on this one 😭',
