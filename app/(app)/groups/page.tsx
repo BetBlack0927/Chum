@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getUserGroups, getGroupStreaks } from '@/lib/actions/groups'
-import { getTodayPromptPreviewByGroup } from '@/lib/actions/rounds'
 import { TopBar } from '@/components/navigation/TopBar'
 import { GroupListCard } from '@/components/groups/GroupListCard'
 import { Plus } from 'lucide-react'
@@ -19,9 +18,6 @@ export default async function GroupsPage() {
     list.map((g: any) => ({ id: g.id, member_count: g.member_count })),
   )
 
-  const groupIds = list.map((g: any) => g.id)
-  const promptByGroup = await getTodayPromptPreviewByGroup(groupIds)
-
   return (
     <div className="flex flex-col">
       <TopBar title="Your Groups" />
@@ -30,7 +26,7 @@ export default async function GroupsPage() {
         {list.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
             {list.map((group: any) => (
               <GroupListCard
                 key={group.id}
@@ -41,7 +37,6 @@ export default async function GroupsPage() {
                   member_count: group.member_count,
                 }}
                 streak={streaks[group.id] ?? 0}
-                promptText={promptByGroup[group.id] ?? null}
               />
             ))}
           </div>
