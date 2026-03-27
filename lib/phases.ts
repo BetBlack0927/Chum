@@ -10,14 +10,14 @@ export const PHASE_CONFIG = {
 
 export function getCurrentPhase(now: Date = new Date()): Phase {
   const hour = now.getHours()  // local time — call this only in the browser
-  if (hour < 20) return 'voting'
+  if (hour < 9) return 'voting'
   return 'results'
 }
 
 export function getPhaseEndTime(phase: Phase, now: Date = new Date()): Date {
   const result = new Date(now)
   if (phase === 'voting') {
-    result.setHours(20, 0, 0, 0)   // local 8pm
+    result.setHours(9, 0, 0, 0)   // local 8pm
   } else {
     result.setDate(result.getDate() + 1)
     result.setHours(0, 0, 0, 0)    // local midnight
