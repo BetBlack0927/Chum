@@ -58,9 +58,6 @@ export function ScrapbookSection({ entries: initial, readonly = false }: Props) 
       <div className="flex flex-col gap-2">
         {entries.map((entry) => {
           const isBeingRemoved = removingId === entry.id
-          const pct = entry.vote_count && entry.total_votes
-            ? Math.round((entry.vote_count / entry.total_votes) * 100)
-            : null
           const date = new Date(entry.round_date).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -85,23 +82,7 @@ export function ScrapbookSection({ entries: initial, readonly = false }: Props) 
                 <p className="text-sm font-semibold text-white leading-snug line-clamp-2">
                   {entry.prompt_text}
                 </p>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="text-[10px] text-white/30">{date}</span>
-                  {entry.group_name && (
-                    <>
-                      <span className="text-white/15 text-[10px]">·</span>
-                      <span className="text-[10px] text-white/30">{entry.group_name}</span>
-                    </>
-                  )}
-                  {pct !== null && (
-                    <>
-                      <span className="text-white/15 text-[10px]">·</span>
-                      <span className="text-[10px] text-gold/50 font-semibold">
-                        {entry.vote_count} {entry.vote_count === 1 ? 'vote' : 'votes'} · {pct}%
-                      </span>
-                    </>
-                  )}
-                </div>
+                <p className="text-[10px] text-white/30 mt-1">{date}</p>
               </div>
 
               {/* Remove — only on own profile */}
