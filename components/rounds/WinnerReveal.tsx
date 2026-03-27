@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { CategoryPicker } from '@/components/rounds/CategoryPicker'
 import { ScrapbookButton } from '@/components/rounds/ScrapbookButton'
 import { CATEGORY_META } from '@/lib/categories'
+import { pickExposedFlavorLabel, pickWinnerFlavorLabel } from '@/lib/resultFlavorLabels'
 import { getAvatarColor, cn } from '@/lib/utils'
 import type { NominationResult, Profile } from '@/types/database'
 
@@ -31,6 +32,9 @@ export function WinnerReveal({
 }: WinnerRevealProps) {
   const [revealed, setRevealed] = useState(false)
   useEffect(() => { const t = setTimeout(() => setRevealed(true), 300); return () => clearTimeout(t) }, [])
+
+  const winnerFlavorLabel  = useMemo(() => pickWinnerFlavorLabel(roundId), [roundId])
+  const exposedFlavorLabel = useMemo(() => pickExposedFlavorLabel(roundId), [roundId])
 
   const isCurrentUserWinner = winner?.profile.id === userId
   const categoryLabel = nextCategory
@@ -73,7 +77,8 @@ export function WinnerReveal({
             />
             <div>
               <p className="font-black text-white text-xl hover:text-brand-light transition-colors">@{winner.profile.username}</p>
-              <p className="text-gold/80 text-sm font-semibold mt-0.5">
+              <p className="text-sm text-gold/55 font-medium mt-1 leading-snug">{winnerFlavorLabel}</p>
+              <p className="text-gold/80 text-sm font-semibold mt-1.5">
                 {winner.vote_count} {winner.vote_count === 1 ? 'vote' : 'votes'}
                 {totalVotes > 0 && (
                   <span className="text-white/30 font-normal">
@@ -122,7 +127,8 @@ export function WinnerReveal({
                 @{revealedVoter.username}
                 {isRevealedVoterYou && <span className="text-red-400 text-sm font-normal ml-1">(you)</span>}
               </p>
-              <p className="text-red-400/70 text-sm font-medium mt-0.5">
+              <p className="text-sm text-red-400/55 font-medium mt-1 leading-snug">{exposedFlavorLabel}</p>
+              <p className="text-red-400/70 text-sm font-medium mt-1.5">
                 Voted for{' '}
                 <span className="text-white font-bold">
                   @{revealedVoterNominee?.username ?? '???'}
