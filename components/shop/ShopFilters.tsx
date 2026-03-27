@@ -7,7 +7,7 @@ import { CATEGORY_META, VALID_CATEGORIES } from '@/lib/categories'
 import { cn } from '@/lib/utils'
 
 const TYPE_OPTIONS = [
-  { value: 'all',     label: 'All'     },
+  { value: 'popular', label: 'Popular' },
   { value: 'prompts', label: 'Prompts' },
   { value: 'packs',   label: 'Packs'   },
 ]
@@ -22,7 +22,7 @@ export function ShopFilters() {
 
   const urlQ = searchParams.get('q') ?? ''
 
-  const type     = searchParams.get('type')     ?? 'all'
+  const type     = searchParams.get('type')     ?? 'popular'
   const category = searchParams.get('category') ?? 'all'
 
   /** Local draft so typing never waits on navigation / RSC — URL updates are debounced */
@@ -97,7 +97,13 @@ export function ShopFilters() {
       else params.delete('q')
 
       params.delete('tab')
-      if (value === 'all' || value === '') {
+      if (key === 'type' && value === 'popular') {
+        params.delete('type')
+        params.delete('category')
+      } else if (key === 'type' && value === 'packs') {
+        params.set('type', 'packs')
+        params.delete('category')
+      } else if (value === 'all' || value === '') {
         params.delete(key)
       } else {
         params.set(key, value)
@@ -147,8 +153,8 @@ export function ShopFilters() {
         ) : null}
       </div>
 
-      {/* Category chips — only show for prompts or all */}
-      {type !== 'packs' && (
+      {/* Category chips — prompts tab only */}
+      {type === 'prompts' && (
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
           <button
             onClick={() => updateParam('category', 'all')}
