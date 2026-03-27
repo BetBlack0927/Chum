@@ -23,96 +23,129 @@ export interface GroupListCardGroup {
 }
 
 interface Props {
-  group:     GroupListCardGroup
-  streak:    number
+  group:      GroupListCardGroup
+  streak:     number
   promptText: string | null
+  variant?:   'featured' | 'compact'
 }
 
-export function GroupListCard({ group, streak, promptText }: Props) {
+export function GroupListCard({ group, streak, promptText, variant = 'compact' }: Props) {
   const [, bump] = useState(0)
   useEffect(() => {
     const id = setInterval(() => bump((n) => n + 1), 30_000)
     return () => clearInterval(id)
   }, [])
 
-  const phase   = getCurrentPhase()
-  const msLeft  = getMsUntilPhaseEnd(phase)
-  const endsIn  = formatEndsIn(msLeft)
-  const isVoting  = phase === 'voting'
-  const isResults = phase === 'results'
-
-  const statusMain = isVoting ? 'Voting now 🗳️' : 'Results ready 👀'
-  const statusSub  = `Ends in ${endsIn} ⏳`
+  const phase       = getCurrentPhase()
+  const msLeft      = getMsUntilPhaseEnd(phase)
+  const endsIn      = formatEndsIn(msLeft)
+  const isVoting    = phase === 'voting'
+  const statusMain  = isVoting ? 'Voting now 🗳️' : 'Results ready 👀'
+  const statusColor = isVoting ? 'text-amber-400/95' : 'text-emerald-400/95'
 
   const promptDisplay = promptText?.trim()
     ? promptText
     : "Open the group to see today's prompt"
 
+  const isFeatured = variant === 'featured'
+
   return (
     <Link
       href={`/groups/${group.id}`}
       className={cn(
-        'flex items-start gap-3 rounded-2xl border p-4 transition-all active:scale-[0.99] hover:bg-surface-2',
-        isVoting && [
-          'border-yellow-400/40 bg-gradient-to-br from-yellow-400/[0.07] via-transparent to-transparent',
-          'shadow-[0_0_28px_-10px_rgba(250,204,21,0.45)]',
+        'flex items-start gap-3 rounded-2xl border transition-all active:scale-[0.99]',
+        isFeatured && [
+          'rounded-3xl p-5 sm:p-6 gap-4',
+          'border-white/12 bg-gradient-to-br from-brand/[0.14] via-surface to-surface',
+          'shadow-[0_0_48px_-16px_rgba(139,92,246,0.45)]',
+          'ring-1 ring-brand/20',
+          'hover:border-white/18 hover:from-brand/[0.18]',
         ],
-        isResults && [
-          'border-emerald-400/40 bg-gradient-to-br from-emerald-400/[0.08] via-transparent to-transparent',
-          'shadow-[0_0_28px_-10px_rgba(52,211,153,0.35)]',
+        !isFeatured && [
+          'p-3.5 gap-3',
+          'border-white/[0.07] bg-white/[0.02]',
+          'hover:bg-white/[0.04] hover:border-white/10',
         ],
-        !isVoting && !isResults && 'border-white/8 bg-surface hover:border-white/14',
       )}
     >
-      <div className="w-12 h-12 rounded-xl shrink-0 overflow-hidden border border-white/10 mt-0.5">
+      <div
+        className={cn(
+          'rounded-xl shrink-0 overflow-hidden border border-white/10',
+          isFeatured ? 'w-14 h-14 sm:w-16 sm:h-16 rounded-2xl' : 'w-11 h-11',
+        )}
+      >
         {group.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={group.avatar_url} alt={group.name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-brand/30 to-gold/20 flex items-center justify-center text-xl font-black text-white">
+          <div
+            className={cn(
+              'w-full h-full bg-gradient-to-br from-brand/30 to-gold/20 flex items-center justify-center font-black text-white',
+              isFeatured ? 'text-2xl' : 'text-lg',
+            )}
+          >
             {group.name.charAt(0).toUpperCase()}
           </div>
         )}
       </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="font-black text-white text-base leading-tight truncate">{group.name}</p>
+      <div className="flex-1 min-w-0 pt-0.5">
         <p
           className={cn(
-            'mt-1.5 text-sm font-medium leading-snug line-clamp-2',
-            promptText?.trim() ? 'text-white/85' : 'text-white/35 italic',
+            'text-white truncate tracking-tight',
+            isFeatured ? 'text-lg sm:text-xl font-black' : 'text-sm font-bold',
+          )}
+        >
+          {group.name}
+        </p>
+
+        <p
+          className={cn(
+            'mt-1.5 font-medium leading-snug line-clamp-2',
+            isFeatured ? 'text-[15px] text-white/80' : 'text-xs text-white/65',
+            !promptText?.trim() && 'italic text-white/35',
           )}
         >
           {promptDisplay}
         </p>
 
-        <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-white/35">
-          <span className="inline-flex items-center gap-1">
-            <Users size={11} className="text-white/25" />
-            {group.member_count} member{group.member_count !== 1 ? 's' : ''}
-          </span>
-          <span className="text-white/15">·</span>
-          <span
-            className={cn(
-              'font-semibold',
-              isVoting && 'text-yellow-400/90',
-              isResults && 'text-emerald-400/90',
-            )}
-          >
+        <div className={cn('mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5', isFeatured && 'mt-3')}>
+          <span className={cn('font-semibold', statusColor, isFeatured ? 'text-sm' : 'text-xs')}>
             {statusMain}
           </span>
-          <span className="text-white/15">·</span>
-          <span className="text-white/30 tabular-nums">{statusSub}</span>
+          <span
+            className={cn(
+              'tabular-nums text-white/30',
+              isFeatured ? 'text-xs' : 'text-[10px]',
+            )}
+          >
+            Ends in {endsIn} ⏳
+          </span>
+        </div>
+
+        <div
+          className={cn(
+            'mt-2 flex flex-wrap items-center gap-x-1.5 text-white/25',
+            isFeatured ? 'text-xs' : 'text-[10px]',
+          )}
+        >
+          <span className="inline-flex items-center gap-1">
+            <Users size={isFeatured ? 12 : 10} className="text-white/20 shrink-0" />
+            {group.member_count} member{group.member_count !== 1 ? 's' : ''}
+          </span>
           {streak > 0 && (
             <>
               <span className="text-white/15">·</span>
-              <span className="font-bold text-orange-400/90">🔥 {streak}</span>
+              <span className="font-semibold text-orange-400/75">🔥 {streak} streak</span>
             </>
           )}
         </div>
       </div>
 
-      <ChevronRight size={18} className="text-white/25 shrink-0 mt-1" />
+      <ChevronRight
+        size={isFeatured ? 22 : 16}
+        className={cn('text-white/20 shrink-0', isFeatured ? 'mt-2' : 'mt-1')}
+      />
     </Link>
   )
 }
