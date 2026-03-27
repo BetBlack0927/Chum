@@ -1,4 +1,4 @@
-# 🏆 Daily Winner
+# 🏆 Chum
 
 A social mobile-first web app where friend groups compete over a daily prompt. One prompt, everyone answers, anonymous voting, one winner crowned per day.
 
@@ -17,7 +17,7 @@ A social mobile-first web app where friend groups compete over a daily prompt. O
 
 ### 1. Clone / open the project
 
-The project lives in the `daily-winner/` folder.
+The Next.js app package is named `chum` (this repo may still use a `daily-winner/` directory on disk).
 
 ### 2. Create a Supabase project
 

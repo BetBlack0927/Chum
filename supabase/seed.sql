@@ -1,5 +1,5 @@
 -- ============================================================
--- Daily Winner — Juicy/High-Engagement Seed Data (60+ "Most Likely To..." prompts)
+-- Chum — Juicy/High-Engagement Seed Data (60+ "Most Likely To..." prompts)
 -- Optimized for testing: spicy, funny, roast-heavy, shareable
 -- Run AFTER schema.sql
 -- ============================================================

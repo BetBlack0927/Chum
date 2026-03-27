@@ -1,5 +1,5 @@
 -- ============================================================
--- Daily Winner — Database Schema
+-- Chum — Database Schema
 -- Run this in your Supabase SQL editor (Project → SQL Editor)
 -- ============================================================
 

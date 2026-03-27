@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Daily Winner',
-  description: 'The game your friend group actually plays every day. Daily prompts, honest answers, one winner.',
-  keywords: ['daily game', 'friend group', 'social app', 'daily winner'],
+  title: 'Chum',
+  description: 'The game your friend group actually plays every day. Daily prompts, honest answers, one winner — Chum.',
+  keywords: ['Chum', 'friend group', 'social app', 'daily game', 'most likely to'],
   icons: {
     icon:  '/logo.png',
     apple: '/logo.png',

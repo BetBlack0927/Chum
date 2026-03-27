@@ -23,7 +23,7 @@ export function TopBar({ title, backHref, right }: TopBarProps) {
             <ArrowLeft size={18} />
           </Link>
         ) : (
-          <Image src="/logo.png" alt="Daily Winner" width={30} height={30} className="rounded-lg shrink-0" />
+          <Image src="/logo.png" alt="Chum" width={30} height={30} className="rounded-lg shrink-0" />
         )}
 
         {title && (

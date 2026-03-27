@@ -54,7 +54,7 @@ export function PromptCard({ prompt, onAddToGroup }: PromptCardProps) {
               @{prompt.creator.username}
             </Link>
           ) : (
-            <span className="text-xs text-white/20">Daily Winner</span>
+            <span className="text-xs text-white/20">Chum</span>
           )}
           {(prompt.add_count ?? 0) > 0 && (
             <span className="flex items-center gap-1 text-[10px] text-white/25">

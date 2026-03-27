@@ -8,14 +8,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="text-center mb-8">
           <Image
             src="/logo.png"
-            alt="Daily Winner"
+            alt="Chum"
             width={72}
             height={72}
             className="rounded-2xl mx-auto mb-4 shadow-xl shadow-brand/20"
           />
           <h1 className="text-2xl font-black tracking-tight">
-            <span className="gradient-text">Daily</span>
-            <span className="text-white"> Winner</span>
+            <span className="gradient-text">Chum</span>
           </h1>
         </div>
 

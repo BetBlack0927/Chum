@@ -6,7 +6,7 @@ export default function LandingPage() {
     <div className="min-h-dvh bg-app-bg text-white flex flex-col">
       {/* Nav */}
       <nav className="flex items-center justify-between px-5 py-4 max-w-[430px] mx-auto w-full">
-        <Image src="/logo.png" alt="Daily Winner" width={40} height={40} className="rounded-xl" />
+        <Image src="/logo.png" alt="Chum" width={40} height={40} className="rounded-xl" />
         <Link
           href="/login"
           className="text-sm font-semibold text-white/60 hover:text-white transition-colors"
@@ -18,7 +18,7 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="flex-1 flex flex-col items-center justify-center px-6 pt-8 pb-16 max-w-[430px] mx-auto w-full text-center">
         <div className="mb-6 drop-shadow-2xl">
-          <Image src="/logo.png" alt="Daily Winner" width={96} height={96} className="rounded-3xl shadow-2xl shadow-brand/30" />
+          <Image src="/logo.png" alt="Chum" width={96} height={96} className="rounded-3xl shadow-2xl shadow-brand/30" />
         </div>
 
         <h1 className="text-4xl font-black leading-tight tracking-tight mb-4">
@@ -104,7 +104,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="px-5 pb-8 text-center max-w-[430px] mx-auto w-full">
-        <p className="text-xs text-white/20">Daily Winner — play every day ✨</p>
+        <p className="text-xs text-white/20">Chum — play every day ✨</p>
       </footer>
     </div>
   )

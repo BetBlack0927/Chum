@@ -46,7 +46,7 @@ export function ShareResult({
     if (!imageUrl) return
     const a    = document.createElement('a')
     a.href     = imageUrl
-    a.download = 'daily-winner-result.png'
+    a.download = 'chum-result.png'
     a.click()
   }
 
@@ -54,8 +54,8 @@ export function ShareResult({
     if (!imageUrl) return
     try {
       const blob = await (await fetch(imageUrl)).blob()
-      const file = new File([blob], 'daily-winner-result.png', { type: 'image/png' })
-      await navigator.share({ files: [file], title: 'Daily Winner' })
+      const file = new File([blob], 'chum-result.png', { type: 'image/png' })
+      await navigator.share({ files: [file], title: 'Chum' })
     } catch { /* cancelled or unsupported */ }
   }
 
@@ -179,7 +179,7 @@ export function ShareResult({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo.png"
-              alt="Daily Winner"
+              alt="Chum"
               width={20}
               height={20}
               style={{ borderRadius: 5, opacity: 0.55 }}
@@ -188,7 +188,7 @@ export function ShareResult({
               fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.25)',
               margin: 0, letterSpacing: '0.14em', textTransform: 'uppercase',
             }}>
-              Daily Winner
+              Chum
             </p>
           </div>
         </div>
