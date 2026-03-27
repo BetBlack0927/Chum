@@ -31,23 +31,9 @@ export default async function GroupsPage() {
   const groupIds = list.map((g: any) => g.id)
   const promptByGroup = await getTodayPromptPreviewByGroup(groupIds)
 
-  const primary   = list[0]
-  const secondary = list.slice(1)
-
-  const cardProps = (group: any) => ({
-    group: {
-      id:           group.id,
-      name:         group.name,
-      avatar_url:   group.avatar_url ?? null,
-      member_count: group.member_count,
-    },
-    streak:     streaks[group.id] ?? 0,
-    promptText: promptByGroup[group.id] ?? null,
-  })
-
   return (
     <div className="flex flex-col">
-      <div className="px-5 pt-6 pb-2">
+      <div className="px-5 pt-6 pb-4">
         <div className="flex items-center gap-3">
           {profile && (
             <Avatar
@@ -64,36 +50,33 @@ export default async function GroupsPage() {
         </div>
       </div>
 
-      <div className="px-4 pb-6 pt-2">
+      <div className="px-4 pb-6">
         {list.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="flex flex-col">
-            <section className="mb-8">
-              <p className="text-[11px] font-bold text-white/35 uppercase tracking-widest px-1 mb-3">
-                🔥 Active now
-              </p>
-              <GroupListCard {...cardProps(primary)} variant="featured" />
-            </section>
-
-            {secondary.length > 0 && (
-              <section>
-                <p className="text-[11px] font-bold text-white/30 uppercase tracking-widest px-1 mb-3">
-                  Your groups
-                </p>
-                <div className="flex flex-col gap-4">
-                  {secondary.map((group: any) => (
-                    <GroupListCard key={group.id} {...cardProps(group)} variant="compact" />
-                  ))}
-                </div>
-              </section>
-            )}
+          <div className="flex flex-col gap-4">
+            <p className="text-[11px] font-bold text-white/30 uppercase tracking-widest px-1">
+              Your groups
+            </p>
+            {list.map((group: any) => (
+              <GroupListCard
+                key={group.id}
+                group={{
+                  id:           group.id,
+                  name:         group.name,
+                  avatar_url:   group.avatar_url ?? null,
+                  member_count: group.member_count,
+                }}
+                streak={streaks[group.id] ?? 0}
+                promptText={promptByGroup[group.id] ?? null}
+              />
+            ))}
           </div>
         )}
 
         <Link
           href="/groups/new"
-          className="mt-6 flex items-center justify-center gap-2 h-12 rounded-2xl bg-brand/15 border border-brand/30 text-brand-light font-semibold text-sm hover:bg-brand/25 transition-colors active:scale-95"
+          className="mt-5 flex items-center justify-center gap-2 h-12 rounded-2xl bg-brand/15 border border-brand/30 text-brand-light font-semibold text-sm hover:bg-brand/25 transition-colors active:scale-95"
         >
           <Plus size={16} />
           Create or Join a Group
