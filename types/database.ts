@@ -114,6 +114,18 @@ export type PackWithPrompts = PromptPack & {
   prompts: ShopPrompt[]
 }
 
+export type ScrapbookEntry = {
+  id:         string
+  user_id:    string
+  round_id:   string
+  prompt_text: string
+  group_name: string | null
+  vote_count: number | null
+  total_votes: number | null
+  round_date: string
+  saved_at:   string
+}
+
 export type CreatorProfile = Profile & {
   bio: string | null
   follower_count: number

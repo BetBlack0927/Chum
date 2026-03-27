@@ -8,6 +8,8 @@ import { Card } from '@/components/ui/Card'
 import { signOut } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/Button'
 import { BioEditor } from './BioEditor'
+import { ScrapbookSection } from './ScrapbookSection'
+import { getScrapbook } from '@/lib/actions/scrapbook'
 import { LogOut, Store, MessageSquare, ExternalLink } from 'lucide-react'
 
 export default async function ProfilePage() {
@@ -22,9 +24,10 @@ export default async function ProfilePage() {
     .single()
 
   const admin = createAdminClient()
-  const [promptCountResult, packCountResult] = await Promise.all([
+  const [promptCountResult, packCountResult, scrapbookEntries] = await Promise.all([
     admin.from('prompts').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
     admin.from('prompt_packs').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
+    getScrapbook(user.id),
   ])
 
   const promptCount = promptCountResult.count ?? 0
@@ -92,6 +95,9 @@ export default async function ProfilePage() {
             </Link>
           </div>
         </div>
+
+        {/* Scrapbook */}
+        <ScrapbookSection entries={scrapbookEntries} />
 
         {/* Account info */}
         <Card>

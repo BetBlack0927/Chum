@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { CategoryPicker } from '@/components/rounds/CategoryPicker'
+import { ScrapbookButton } from '@/components/rounds/ScrapbookButton'
 import { CATEGORY_META } from '@/lib/categories'
 import { getAvatarColor, cn } from '@/lib/utils'
 import type { NominationResult, Profile } from '@/types/database'
@@ -20,11 +21,12 @@ interface WinnerRevealProps {
   roundId:               string
   groupId:               string
   nextCategory:          string | null
+  isInScrapbook:         boolean
 }
 
 export function WinnerReveal({
   promptText, winner, nominations, totalVotes, allComments, revealedVoter, revealedVoterNominee,
-  userId, roundId, groupId, nextCategory,
+  userId, roundId, groupId, nextCategory, isInScrapbook,
 }: WinnerRevealProps) {
   const [revealed, setRevealed] = useState(false)
   useEffect(() => { const t = setTimeout(() => setRevealed(true), 300); return () => clearTimeout(t) }, [])
@@ -51,6 +53,12 @@ export function WinnerReveal({
               <p className="text-sm text-gold font-bold mt-1">The group voted for you! 🎉</p>
             )}
           </div>
+
+          {isCurrentUserWinner && (
+            <div className="flex justify-center mb-4">
+              <ScrapbookButton roundId={roundId} initialSaved={isInScrapbook} />
+            </div>
+          )}
 
           <div className="flex items-center gap-4 bg-black/20 rounded-2xl border border-white/8 p-4">
             <Avatar

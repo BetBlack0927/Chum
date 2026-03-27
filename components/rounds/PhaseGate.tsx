@@ -32,11 +32,12 @@ interface PhaseGateProps {
   userId:          string
   isAdmin:         boolean
   memberCount:     number
+  isInScrapbook:   boolean
 }
 
 export function PhaseGate({
   roundId, groupId, promptText, hasRerolled, nextCategory,
-  roundData, memberProfiles, userId, isAdmin, memberCount,
+  roundData, memberProfiles, userId, isAdmin, memberCount, isInScrapbook,
 }: PhaseGateProps) {
   const router = useRouter()
   const [phase, setPhase] = useState<Phase | null>(null)
@@ -127,6 +128,7 @@ export function PhaseGate({
             roundId={roundId}
             groupId={groupId}
             nextCategory={nextCategory}
+            isInScrapbook={isInScrapbook}
           />
         </section>
       )}
