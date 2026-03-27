@@ -7,10 +7,11 @@ import { cn } from '@/lib/utils'
 import type { ScrapbookEntry } from '@/types/database'
 
 interface Props {
-  entries: ScrapbookEntry[]
+  entries:   ScrapbookEntry[]
+  readonly?: boolean
 }
 
-export function ScrapbookSection({ entries: initial }: Props) {
+export function ScrapbookSection({ entries: initial, readonly = false }: Props) {
   const [entries, setEntries] = useState(initial)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [isPending, start] = useTransition()
@@ -27,6 +28,9 @@ export function ScrapbookSection({ entries: initial }: Props) {
   }
 
   if (entries.length === 0) {
+    // On someone else's profile with no entries, show nothing
+    if (readonly) return null
+
     return (
       <div className="rounded-2xl border border-white/8 bg-surface p-5">
         <div className="flex items-center gap-2 mb-3">
@@ -100,15 +104,17 @@ export function ScrapbookSection({ entries: initial }: Props) {
                 </div>
               </div>
 
-              {/* Remove */}
-              <button
-                onClick={() => handleRemove(entry.id)}
-                disabled={isPending}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-colors shrink-0"
-                title="Remove from scrapbook"
-              >
-                <Trash2 size={13} />
-              </button>
+              {/* Remove — only on own profile */}
+              {!readonly && (
+                <button
+                  onClick={() => handleRemove(entry.id)}
+                  disabled={isPending}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-colors shrink-0"
+                  title="Remove from scrapbook"
+                >
+                  <Trash2 size={13} />
+                </button>
+              )}
             </div>
           )
         })}

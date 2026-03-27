@@ -2,11 +2,13 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCreatorProfile, getCreatorPrompts, getCreatorPacks } from '@/lib/actions/shop'
+import { getScrapbook } from '@/lib/actions/scrapbook'
 import { TopBar } from '@/components/navigation/TopBar'
 import { Avatar } from '@/components/ui/Avatar'
 import { getAvatarColor } from '@/lib/utils'
 import { FollowButton } from '@/components/shop/FollowButton'
 import { CreatorContentClient } from './CreatorContentClient'
+import { ScrapbookSection } from '@/app/(app)/profile/ScrapbookSection'
 
 interface Props {
   params: Promise<{ username: string }>
@@ -22,9 +24,10 @@ export default async function CreatorPage({ params }: Props) {
   const profile = await getCreatorProfile(username)
   if (!profile) notFound()
 
-  const [creatorPrompts, creatorPacks] = await Promise.all([
+  const [creatorPrompts, creatorPacks, scrapbookEntries] = await Promise.all([
     getCreatorPrompts(profile.id),
     getCreatorPacks(profile.id),
+    getScrapbook(profile.id),
   ])
 
   const isOwnProfile = profile.id === user.id
@@ -35,20 +38,14 @@ export default async function CreatorPage({ params }: Props) {
         title={`@${profile.username}`}
         backHref="/shop"
         right={
-          !isOwnProfile ? (
-            <FollowButton
-              creatorId={profile.id}
-              initialIsFollowing={profile.is_following ?? false}
-              size="sm"
-            />
-          ) : (
+          isOwnProfile ? (
             <Link
               href="/shop/create"
               className="flex items-center gap-1.5 px-3 h-9 rounded-xl bg-brand text-white text-xs font-bold hover:bg-brand/90 transition-colors"
             >
               + Create
             </Link>
-          )
+          ) : undefined
         }
       />
 
@@ -97,6 +94,9 @@ export default async function CreatorPage({ params }: Props) {
             />
           )}
         </div>
+
+        {/* Scrapbook highlights */}
+        <ScrapbookSection entries={scrapbookEntries} readonly={!isOwnProfile} />
 
         {/* Content tabs */}
         <CreatorContentClient
