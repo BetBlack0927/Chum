@@ -11,6 +11,7 @@ import { BioEditor } from './BioEditor'
 import { getScrapbook } from '@/lib/actions/scrapbook'
 import { getCreatorPrompts, getCreatorPacks, getMyPrivatePrompts } from '@/lib/actions/shop'
 import { CreatorContentClient } from '@/app/(app)/creators/[username]/CreatorContentClient'
+import { FollowStats } from '@/app/(app)/creators/[username]/FollowStats'
 import { LogOut, Store, MessageSquare, ExternalLink } from 'lucide-react'
 
 export default async function ProfilePage() {
@@ -25,17 +26,30 @@ export default async function ProfilePage() {
     .single()
 
   const admin = createAdminClient()
-  const [promptCountResult, packCountResult, scrapbookEntries, myPrompts, myPacks, myPrivatePrompts] = await Promise.all([
+  const [
+    promptCountResult,
+    packCountResult,
+    followerCountResult,
+    followingCountResult,
+    scrapbookEntries,
+    myPrompts,
+    myPacks,
+    myPrivatePrompts,
+  ] = await Promise.all([
     admin.from('prompts').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
     admin.from('prompt_packs').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
+    admin.from('creator_follows').select('id', { count: 'exact', head: true }).eq('following_id', user.id),
+    admin.from('creator_follows').select('id', { count: 'exact', head: true }).eq('follower_id', user.id),
     getScrapbook(user.id),
     getCreatorPrompts(user.id),
     getCreatorPacks(user.id),
     getMyPrivatePrompts(),
   ])
 
-  const promptCount = promptCountResult.count ?? 0
-  const packCount   = packCountResult.count   ?? 0
+  const promptCount    = promptCountResult.count    ?? 0
+  const packCount      = packCountResult.count      ?? 0
+  const followerCount  = followerCountResult.count  ?? 0
+  const followingCount = followingCountResult.count ?? 0
 
   return (
     <div>
@@ -68,16 +82,16 @@ export default async function ProfilePage() {
             </div>
           </div>
 
-          <div className="flex gap-4 mb-4">
-            <div className="text-center flex-1">
-              <p className="font-bold text-white text-lg">{promptCount}</p>
-              <p className="text-xs text-white/40">Prompts</p>
-            </div>
-            <div className="w-px bg-white/10" />
-            <div className="text-center flex-1">
-              <p className="font-bold text-white text-lg">{packCount}</p>
-              <p className="text-xs text-white/40">Packs</p>
-            </div>
+          {/* Followers/following tappable stats + prompts/packs */}
+          <div className="mb-4">
+            <FollowStats
+              userId={user.id}
+              currentUserId={user.id}
+              followerCount={followerCount}
+              followingCount={followingCount}
+              promptCount={promptCount}
+              packCount={packCount}
+            />
           </div>
 
           <div className="flex gap-2">

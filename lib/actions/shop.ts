@@ -408,6 +408,37 @@ export async function toggleFollowCreator(followingId: string): Promise<{ follow
   }
 }
 
+// ─── Followers / Following ────────────────────────────────────────────────────
+
+export type FollowEntry = {
+  id: string
+  username: string
+  avatar_color: string
+  avatar_url: string | null
+}
+
+export async function getFollowers(userId: string): Promise<FollowEntry[]> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('creator_follows')
+    .select('profiles!follower_id(id, username, avatar_color, avatar_url)')
+    .eq('following_id', userId)
+    .order('created_at', { ascending: false })
+
+  return (data ?? []).map((row: any) => row.profiles).filter(Boolean)
+}
+
+export async function getFollowing(userId: string): Promise<FollowEntry[]> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('creator_follows')
+    .select('profiles!following_id(id, username, avatar_color, avatar_url)')
+    .eq('follower_id', userId)
+    .order('created_at', { ascending: false })
+
+  return (data ?? []).map((row: any) => row.profiles).filter(Boolean)
+}
+
 // ─── Save / Unsave ────────────────────────────────────────────────────────────
 
 export async function toggleSavePrompt(promptId: string): Promise<{ saved: boolean; error?: string }> {

@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { getAvatarColor } from '@/lib/utils'
 import { FollowButton } from '@/components/shop/FollowButton'
 import { CreatorContentClient } from './CreatorContentClient'
+import { FollowStats } from './FollowStats'
 
 interface Props {
   params: Promise<{ username: string }>
@@ -67,23 +68,15 @@ export default async function CreatorPage({ params }: Props) {
             )}
           </div>
 
-          {/* Stats row */}
-          <div className="flex items-center gap-6">
-            <div className="text-center">
-              <p className="font-bold text-white text-lg">{profile.follower_count}</p>
-              <p className="text-xs text-white/40">Followers</p>
-            </div>
-            <div className="w-px h-8 bg-white/10" />
-            <div className="text-center">
-              <p className="font-bold text-white text-lg">{profile.prompt_count}</p>
-              <p className="text-xs text-white/40">Prompts</p>
-            </div>
-            <div className="w-px h-8 bg-white/10" />
-            <div className="text-center">
-              <p className="font-bold text-white text-lg">{profile.pack_count}</p>
-              <p className="text-xs text-white/40">Packs</p>
-            </div>
-          </div>
+          {/* Stats row — follower/following counts are tappable */}
+          <FollowStats
+            userId={profile.id}
+            currentUserId={user.id}
+            followerCount={profile.follower_count}
+            followingCount={profile.following_count}
+            promptCount={profile.prompt_count}
+            packCount={profile.pack_count}
+          />
 
           {/* Follow button (larger, centered) — only on non-own profiles */}
           {!isOwnProfile && (
