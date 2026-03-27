@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getUserGroups, getGroupStreaks } from '@/lib/actions/groups'
 import { getTodayPromptPreviewByGroup } from '@/lib/actions/rounds'
-import { Avatar } from '@/components/ui/Avatar'
+import { TopBar } from '@/components/navigation/TopBar'
 import { GroupListCard } from '@/components/groups/GroupListCard'
 import { Plus } from 'lucide-react'
 
@@ -12,16 +12,7 @@ export default async function GroupsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [profileResult, groups] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('username, avatar_color, avatar_url')
-      .eq('id', user.id)
-      .single(),
-    getUserGroups(),
-  ])
-
-  const profile = profileResult.data
+  const groups = await getUserGroups()
   const list = groups as any[]
 
   const streaks = await getGroupStreaks(
@@ -33,31 +24,13 @@ export default async function GroupsPage() {
 
   return (
     <div className="flex flex-col">
-      <div className="px-5 pt-6 pb-4">
-        <div className="flex items-center gap-3">
-          {profile && (
-            <Avatar
-              username={profile.username}
-              color={profile.avatar_color}
-              url={profile.avatar_url}
-              size="md"
-            />
-          )}
-          <div>
-            <p className="text-xs text-white/40 font-medium">Hey there 👋</p>
-            <p className="font-bold text-white text-lg">@{profile?.username}</p>
-          </div>
-        </div>
-      </div>
+      <TopBar title="Your Groups" />
 
-      <div className="px-4 pb-6">
+      <div className="px-4 pt-6 pb-6 flex flex-col gap-4">
         {list.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="flex flex-col gap-4">
-            <p className="text-[11px] font-bold text-white/30 uppercase tracking-widest px-1">
-              Your groups
-            </p>
             {list.map((group: any) => (
               <GroupListCard
                 key={group.id}
@@ -76,7 +49,7 @@ export default async function GroupsPage() {
 
         <Link
           href="/groups/new"
-          className="mt-5 flex items-center justify-center gap-2 h-12 rounded-2xl bg-brand/15 border border-brand/30 text-brand-light font-semibold text-sm hover:bg-brand/25 transition-colors active:scale-95"
+          className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-brand/15 border border-brand/30 text-brand-light font-semibold text-sm hover:bg-brand/25 transition-colors active:scale-95"
         >
           <Plus size={16} />
           Create or Join a Group
