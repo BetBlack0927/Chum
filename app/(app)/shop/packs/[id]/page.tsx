@@ -51,8 +51,13 @@ export default async function PackDetailPage({ params }: Props) {
         {/* Pack header */}
         <div className="rounded-2xl border border-brand/20 bg-gradient-to-br from-brand/8 to-gold/5 p-5">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand/40 to-gold/20 border border-brand/20 flex items-center justify-center shrink-0">
-              <Layers size={22} className="text-brand-light" />
+            <div className="w-14 h-14 rounded-2xl border border-brand/20 overflow-hidden shrink-0 bg-gradient-to-br from-brand/40 to-gold/20 flex items-center justify-center">
+              {pack.cover_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={pack.cover_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <Layers size={22} className="text-brand-light" />
+              )}
             </div>
             <div className="flex-1">
               <h1 className="font-black text-white text-xl leading-tight">{pack.name}</h1>

@@ -28,8 +28,13 @@ export function FollowingFeedStrip({ prompts, packs }: Props) {
             className="flex-none w-48 rounded-2xl border border-white/8 bg-surface p-3 flex flex-col gap-2"
           >
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand/30 to-gold/20 flex items-center justify-center shrink-0">
-                <Layers size={14} className="text-brand-light" />
+              <div className="w-8 h-8 rounded-lg border border-white/10 overflow-hidden shrink-0 bg-gradient-to-br from-brand/30 to-gold/20 flex items-center justify-center">
+                {pack.cover_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={pack.cover_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <Layers size={14} className="text-brand-light" />
+                )}
               </div>
               <div className="min-w-0">
                 <Link

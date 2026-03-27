@@ -87,6 +87,8 @@ export async function getShopFeed(options?: {
 
   const packs: PromptPack[] = (packsResult.data ?? []).map((p: any) => ({
     ...p,
+    cover_url: p.cover_url ?? null,
+    add_count: p.add_count ?? 0,
     prompt_count: p.prompt_count?.[0]?.count ?? 0,
     is_saved: savedPackIds.has(p.id),
   }))
@@ -145,6 +147,8 @@ export async function getFollowingFeed(userId: string): Promise<{
     prompts: promptsResult.data ?? [],
     packs: (packsResult.data ?? []).map((p: any) => ({
       ...p,
+      cover_url: p.cover_url ?? null,
+      add_count: p.add_count ?? 0,
       prompt_count: p.prompt_count?.[0]?.count ?? 0,
     })),
   }
@@ -214,10 +218,36 @@ export async function createPack(formData: FormData) {
 
   const admin = createAdminClient()
 
+  const rawCover = formData.get('cover')
+  let coverUrl: string | null = null
+  if (rawCover instanceof File && rawCover.size > 0) {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowed.includes(rawCover.type)) {
+      return { error: 'Cover image must be JPG, PNG, or WebP.' }
+    }
+    const maxBytes = 5 * 1024 * 1024
+    if (rawCover.size > maxBytes) {
+      return { error: 'Cover image must be under 5 MB.' }
+    }
+    const extRaw = rawCover.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+    const ext = ['jpg', 'jpeg', 'png', 'webp'].includes(extRaw) ? extRaw.replace('jpeg', 'jpg') : 'jpg'
+    const path = `${user.id}/${Date.now()}.${ext}`
+    const buf = Buffer.from(await rawCover.arrayBuffer())
+    const { data: uploaded, error: uploadErr } = await admin.storage
+      .from('pack-covers')
+      .upload(path, buf, { contentType: rawCover.type, upsert: false })
+
+    if (uploadErr || !uploaded) {
+      return { error: uploadErr?.message ?? 'Failed to upload cover image.' }
+    }
+    const { data: pub } = admin.storage.from('pack-covers').getPublicUrl(uploaded.path)
+    coverUrl = pub.publicUrl
+  }
+
   // Create pack
   const { data: pack, error: packError } = await admin
     .from('prompt_packs')
-    .insert({ name, description, visibility, creator_id: user.id })
+    .insert({ name, description, visibility, creator_id: user.id, cover_url: coverUrl })
     .select('id')
     .single()
 
@@ -248,6 +278,7 @@ export async function createPack(formData: FormData) {
   await admin.from('pack_prompts').insert(packPromptInserts)
 
   revalidatePath('/shop')
+  revalidatePath(`/shop/packs/${pack.id}`)
   return { success: true, packId: pack.id }
 }
 
@@ -286,6 +317,8 @@ export async function getPackDetail(packId: string): Promise<PackWithPrompts | n
 
   return {
     ...pack,
+    cover_url: (pack as { cover_url?: string | null }).cover_url ?? null,
+    add_count: (pack as { add_count?: number }).add_count ?? 0,
     prompts,
     prompt_count: prompts.length,
     is_saved: !!savedPack,
@@ -393,6 +426,8 @@ export async function getCreatorPacks(creatorId: string): Promise<PromptPack[]> 
 
   return (data ?? []).map((p: any) => ({
     ...p,
+    cover_url: p.cover_url ?? null,
+    add_count: p.add_count ?? 0,
     prompt_count: p.prompt_count?.[0]?.count ?? 0,
   }))
 }
@@ -809,6 +844,7 @@ export async function getPopularItems(limit = 5): Promise<{
     .filter(Boolean)
     .map((p: any) => ({
       ...p,
+      cover_url:    p.cover_url ?? null,
       add_count:    packGroupSets[p.id]?.size ?? 0,
       prompt_count: Array.isArray(p.prompt_count) ? p.prompt_count[0]?.count ?? 0 : (p.prompt_count ?? 0),
       creator:      p.creator ?? undefined,
@@ -849,6 +885,8 @@ export async function getSavedItems(userId: string): Promise<{
     .filter(Boolean)
     .map((p: any) => ({
       ...p,
+      cover_url: p.cover_url ?? null,
+      add_count: p.add_count ?? 0,
       prompt_count: p.prompt_count?.[0]?.count ?? 0,
       is_saved: true,
     }))

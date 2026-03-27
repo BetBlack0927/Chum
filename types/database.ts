@@ -102,6 +102,7 @@ export type PromptPack = {
   creator_id: string
   name: string
   description: string | null
+  cover_url: string | null
   visibility: 'public' | 'private'
   add_count: number
   created_at: string

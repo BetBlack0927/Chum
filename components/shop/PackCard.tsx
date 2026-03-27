@@ -27,8 +27,13 @@ export function PackCard({ pack, onAddToGroup }: PackCardProps) {
     <div className="rounded-2xl border border-white/8 bg-surface p-4 flex flex-col gap-3">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand/30 to-gold/20 border border-brand/20 flex items-center justify-center shrink-0">
-          <Layers size={18} className="text-brand-light" />
+        <div className="w-10 h-10 rounded-xl border border-white/10 overflow-hidden shrink-0 bg-gradient-to-br from-brand/30 to-gold/20 flex items-center justify-center">
+          {pack.cover_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={pack.cover_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <Layers size={18} className="text-brand-light" />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <Link

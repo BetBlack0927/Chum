@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, MessageSquare, Layers } from 'lucide-react'
+import { Plus, Trash2, MessageSquare, Layers, Camera, X } from 'lucide-react'
 import { createShopPrompt, createPack } from '@/lib/actions/shop'
 import { TopBar } from '@/components/navigation/TopBar'
 import { Button } from '@/components/ui/Button'
@@ -148,11 +148,17 @@ interface PackPromptRow {
   category: string
 }
 
+const COVER_MAX_BYTES = 5 * 1024 * 1024
+
 function CreatePackForm() {
   const router = useRouter()
+  const coverInputRef = useRef<HTMLInputElement>(null)
   const [name, setName]           = useState('')
   const [description, setDesc]    = useState('')
   const [visibility, setVis]      = useState<Visibility>('public')
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [coverPreview, setCoverPreview] = useState<string | null>(null)
+  const [coverErr, setCoverErr]   = useState<string | null>(null)
   const [prompts, setPrompts]     = useState<PackPromptRow[]>([
     { id: 1, text: '', category: '' },
     { id: 2, text: '', category: '' },
@@ -160,6 +166,35 @@ function CreatePackForm() {
   const [error, setError]         = useState<string | null>(null)
   const [isPending, start]        = useTransition()
   const nextId = prompts.length > 0 ? Math.max(...prompts.map((p) => p.id)) + 1 : 1
+
+  useEffect(() => {
+    return () => {
+      if (coverPreview?.startsWith('blob:')) URL.revokeObjectURL(coverPreview)
+    }
+  }, [coverPreview])
+
+  function handleCoverPick(file: File | undefined) {
+    if (!file) return
+    setCoverErr(null)
+    if (!file.type.startsWith('image/')) {
+      setCoverErr('Use JPG, PNG, or WebP.')
+      return
+    }
+    if (file.size > COVER_MAX_BYTES) {
+      setCoverErr('Image must be under 5 MB.')
+      return
+    }
+    if (coverPreview?.startsWith('blob:')) URL.revokeObjectURL(coverPreview)
+    setCoverFile(file)
+    setCoverPreview(URL.createObjectURL(file))
+  }
+
+  function removeCover() {
+    if (coverPreview?.startsWith('blob:')) URL.revokeObjectURL(coverPreview)
+    setCoverFile(null)
+    setCoverPreview(null)
+    setCoverErr(null)
+  }
 
   function addRow() {
     setPrompts((prev) => [...prev, { id: nextId, text: '', category: '' }])
@@ -183,6 +218,7 @@ function CreatePackForm() {
       fd.set('prompts', JSON.stringify(
         prompts.map((p) => ({ text: p.text, category: p.category }))
       ))
+      if (coverFile) fd.append('cover', coverFile)
       const result = await createPack(fd)
       if (result?.error) {
         setError(result.error)
@@ -225,6 +261,62 @@ function CreatePackForm() {
           placeholder="What's the vibe of this pack?"
           maxLength={140}
           className="w-full bg-surface border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-brand/50"
+        />
+      </div>
+
+      {/* Pack cover (optional) */}
+      <div>
+        <label className="text-xs font-bold text-white/40 uppercase tracking-wide block mb-2">
+          Pack cover <span className="text-white/25 font-normal normal-case">(optional)</span>
+        </label>
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => coverInputRef.current?.click()}
+            className="relative w-24 h-24 rounded-2xl border border-white/10 bg-white/5 overflow-hidden shrink-0 flex items-center justify-center hover:border-brand/40 transition-colors"
+          >
+            {coverPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coverPreview} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <Camera size={28} className="text-white/25" />
+            )}
+          </button>
+          <div className="flex-1 min-w-0 pt-1">
+            <p className="text-xs text-white/35 leading-relaxed">
+              Square-ish photos look best. Shown on your pack in the shop.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => coverInputRef.current?.click()}
+                className="text-xs font-semibold text-brand-light hover:text-brand-light/80"
+              >
+                {coverPreview ? 'Change photo' : 'Choose photo'}
+              </button>
+              {coverPreview && (
+                <button
+                  type="button"
+                  onClick={removeCover}
+                  className="text-xs font-semibold text-white/40 hover:text-red-400 flex items-center gap-1"
+                >
+                  <X size={12} />
+                  Remove
+                </button>
+              )}
+            </div>
+            {coverErr && <p className="text-xs text-red-400 mt-2">{coverErr}</p>}
+          </div>
+        </div>
+        <input
+          ref={coverInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="sr-only"
+          onChange={(e) => {
+            handleCoverPick(e.target.files?.[0])
+            e.target.value = ''
+          }}
         />
       </div>
 
