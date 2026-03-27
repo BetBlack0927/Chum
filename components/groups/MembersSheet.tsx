@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { kickMember } from '@/lib/actions/groups'
 import { getCurrentPhase, getMsUntilPhaseEnd } from '@/lib/phases'
 import { Avatar } from '@/components/ui/Avatar'
@@ -153,24 +154,31 @@ function MemberRow({
     })
   }
 
+  const profileHref = isYou ? '/profile' : `/creators/${member.username}`
+
   return (
     <div className={cn(
       'rounded-2xl border p-3 flex items-center gap-3 transition-colors',
       confirming ? 'border-red-500/30 bg-red-500/8' : 'border-white/8 bg-surface-2',
     )}>
-      <Avatar
-        username={member.username}
-        color={member.avatar_color || getAvatarColor(member.id)}
-        url={member.avatar_url}
-        size="md"
-      />
+      <Link href={profileHref} className="shrink-0">
+        <Avatar
+          username={member.username}
+          color={member.avatar_color || getAvatarColor(member.id)}
+          url={member.avatar_url}
+          size="md"
+        />
+      </Link>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <p className="font-semibold text-white text-sm truncate">
+          <Link
+            href={profileHref}
+            className="font-semibold text-white text-sm truncate hover:text-brand-light transition-colors"
+          >
             @{member.username}
             {isYou && <span className="text-white/30 font-normal"> (you)</span>}
-          </p>
+          </Link>
           {member.role === 'admin' && (
             <ShieldCheck size={13} className="text-gold shrink-0" />
           )}

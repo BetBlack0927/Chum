@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { CategoryPicker } from '@/components/rounds/CategoryPicker'
@@ -60,7 +61,10 @@ export function WinnerReveal({
             </div>
           )}
 
-          <div className="flex items-center gap-4 bg-black/20 rounded-2xl border border-white/8 p-4">
+          <Link
+            href={winner.profile.id === userId ? '/profile' : `/creators/${winner.profile.username}`}
+            className="flex items-center gap-4 bg-black/20 rounded-2xl border border-white/8 p-4 hover:border-white/15 transition-colors"
+          >
             <Avatar
               username={winner.profile.username}
               color={winner.profile.avatar_color || getAvatarColor(winner.profile.id)}
@@ -68,7 +72,7 @@ export function WinnerReveal({
               size="xl"
             />
             <div>
-              <p className="font-black text-white text-xl">@{winner.profile.username}</p>
+              <p className="font-black text-white text-xl hover:text-brand-light transition-colors">@{winner.profile.username}</p>
               <p className="text-gold/80 text-sm font-semibold mt-0.5">
                 {winner.vote_count} {winner.vote_count === 1 ? 'vote' : 'votes'}
                 {totalVotes > 0 && (
@@ -78,7 +82,7 @@ export function WinnerReveal({
                 )}
               </p>
             </div>
-          </div>
+          </Link>
         </div>
       ) : (
         <Card className="text-center py-10">
@@ -219,18 +223,23 @@ export function WinnerReveal({
                   )}
                 >
                   <span className="text-xs font-bold text-white/30 w-4 shrink-0 text-center">{i + 1}</span>
-                  <Avatar
-                    username={n.profile.username}
-                    color={n.profile.avatar_color || getAvatarColor(n.profile.id)}
-                    url={n.profile.avatar_url}
-                    size="md"
-                  />
+                  <Link href={isYou ? '/profile' : `/creators/${n.profile.username}`} className="shrink-0">
+                    <Avatar
+                      username={n.profile.username}
+                      color={n.profile.avatar_color || getAvatarColor(n.profile.id)}
+                      url={n.profile.avatar_url}
+                      size="md"
+                    />
+                  </Link>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-semibold text-white truncate">
+                      <Link
+                        href={isYou ? '/profile' : `/creators/${n.profile.username}`}
+                        className="text-sm font-semibold text-white truncate hover:text-brand-light transition-colors"
+                      >
                         @{n.profile.username}
                         {isYou && <span className="text-white/30 font-normal"> (you)</span>}
-                      </p>
+                      </Link>
                       <span className="text-xs text-white/40 tabular-nums shrink-0 ml-2">
                         {n.vote_count} vote{n.vote_count !== 1 ? 's' : ''}
                         {totalVotes > 0 && (

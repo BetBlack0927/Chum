@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getGroupDetails } from '@/lib/actions/groups'
 import { getGroupHistory } from '@/lib/actions/rounds'
+import Link from 'next/link'
 import { TopBar } from '@/components/navigation/TopBar'
 import { Avatar } from '@/components/ui/Avatar'
 import { getAvatarColor, formatRoundDate } from '@/lib/utils'
@@ -85,7 +86,10 @@ function HistoryCard({ round, winner, totalVotes, userId }: {
       {/* Winner */}
       {winner ? (
         <div className="px-4 py-3">
-          <div className="flex items-center gap-3">
+          <Link
+            href={isWinnerMe ? '/profile' : `/creators/${winner.profile.username}`}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
             <Avatar
               username={winner.profile.username}
               color={winner.profile.avatar_color || getAvatarColor(winner.profile.id)}
@@ -105,7 +109,7 @@ function HistoryCard({ round, winner, totalVotes, userId }: {
                 {totalVotes > 0 && ` · ${Math.round((winner.vote_count / totalVotes) * 100)}% of group`}
               </p>
             </div>
-          </div>
+          </Link>
         </div>
       ) : (
         <div className="px-4 py-3">
