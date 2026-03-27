@@ -1,53 +1,70 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PromptCard } from '@/components/shop/PromptCard'
 import { PackCard } from '@/components/shop/PackCard'
 import { AddToGroupSheet } from '@/components/shop/AddToGroupSheet'
-import type { ShopPrompt, PromptPack } from '@/types/database'
+import { ScrapbookSection } from '@/app/(app)/profile/ScrapbookSection'
+import type { ShopPrompt, PromptPack, ScrapbookEntry } from '@/types/database'
 
-type Tab = 'prompts' | 'packs'
+type Tab = 'scrapbook' | 'prompts' | 'packs'
 
 type SheetTarget =
   | { type: 'prompt'; item: ShopPrompt }
   | { type: 'pack';   item: PromptPack }
 
 interface Props {
-  prompts:   ShopPrompt[]
-  packs:     PromptPack[]
-  userId:    string
-  creatorId: string
+  prompts:           ShopPrompt[]
+  packs:             PromptPack[]
+  scrapbookEntries:  ScrapbookEntry[]
+  scrapbookReadonly: boolean
 }
 
-export function CreatorContentClient({ prompts, packs, userId, creatorId }: Props) {
-  const [tab, setTab]             = useState<Tab>('prompts')
+export function CreatorContentClient({
+  prompts,
+  packs,
+  scrapbookEntries,
+  scrapbookReadonly,
+}: Props) {
+  const [tab, setTab]             = useState<Tab>('scrapbook')
   const [sheetTarget, setSheet]   = useState<SheetTarget | null>(null)
+  const [liveScrapbook, setLiveScrapbook] = useState(scrapbookEntries)
+
+  const sbKey = scrapbookEntries.map((e) => e.id).join(',')
+  useEffect(() => {
+    setLiveScrapbook(scrapbookEntries)
+  }, [sbKey, scrapbookEntries])
+
+  const tabBtn = (t: Tab, label: string) => (
+    <button
+      type="button"
+      onClick={() => setTab(t)}
+      className={[
+        'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors min-w-0',
+        tab === t ? 'bg-brand text-white' : 'text-white/40 hover:text-white/70',
+      ].join(' ')}
+    >
+      {label}
+    </button>
+  )
 
   return (
     <>
-      {/* Tab switcher */}
       <div className="flex gap-1 p-1 rounded-xl bg-white/6 border border-white/8">
-        <button
-          onClick={() => setTab('prompts')}
-          className={[
-            'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
-            tab === 'prompts' ? 'bg-brand text-white' : 'text-white/40 hover:text-white/70',
-          ].join(' ')}
-        >
-          Prompts ({prompts.length})
-        </button>
-        <button
-          onClick={() => setTab('packs')}
-          className={[
-            'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
-            tab === 'packs' ? 'bg-brand text-white' : 'text-white/40 hover:text-white/70',
-          ].join(' ')}
-        >
-          Packs ({packs.length})
-        </button>
+        {tabBtn('scrapbook', `Scrapbook (${liveScrapbook.length})`)}
+        {tabBtn('prompts', `Prompts (${prompts.length})`)}
+        {tabBtn('packs', `Packs (${packs.length})`)}
       </div>
 
-      {/* Content */}
+      {tab === 'scrapbook' && (
+        <ScrapbookSection
+          entries={liveScrapbook}
+          readonly={scrapbookReadonly}
+          embeddedInTab
+          onEntriesUpdate={setLiveScrapbook}
+        />
+      )}
+
       {tab === 'prompts' && (
         prompts.length === 0 ? (
           <div className="text-center py-10">

@@ -8,7 +8,6 @@ import { Avatar } from '@/components/ui/Avatar'
 import { getAvatarColor } from '@/lib/utils'
 import { FollowButton } from '@/components/shop/FollowButton'
 import { CreatorContentClient } from './CreatorContentClient'
-import { ScrapbookSection } from '@/app/(app)/profile/ScrapbookSection'
 
 interface Props {
   params: Promise<{ username: string }>
@@ -95,15 +94,11 @@ export default async function CreatorPage({ params }: Props) {
           )}
         </div>
 
-        {/* Scrapbook highlights */}
-        <ScrapbookSection entries={scrapbookEntries} readonly={!isOwnProfile} />
-
-        {/* Content tabs */}
         <CreatorContentClient
           prompts={creatorPrompts}
           packs={creatorPacks}
-          userId={user.id}
-          creatorId={profile.id}
+          scrapbookEntries={scrapbookEntries}
+          scrapbookReadonly={!isOwnProfile}
         />
       </div>
     </div>
