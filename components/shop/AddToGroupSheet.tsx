@@ -90,7 +90,7 @@ export function AddToGroupSheet({ target, onClose }: AddToGroupSheetProps) {
     <>
       {/* Backdrop — z-[200] sits above the bottom nav (z-50) */}
       <div
-        className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[200] bg-black/65"
         onClick={onClose}
       />
 

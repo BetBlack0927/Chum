@@ -11,14 +11,14 @@ interface TopBarProps {
 export function TopBar({ title, backHref, right }: TopBarProps) {
   return (
     <header
-      className="sticky top-0 z-40 bg-app-bg/90 backdrop-blur-xl border-b border-white/6"
+      className="sticky top-0 z-40 bg-app-bg border-b border-white/6 supports-[backdrop-filter]:bg-app-bg/95"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="flex items-center h-14 px-4 gap-3 max-w-[430px] mx-auto">
         {backHref ? (
           <Link
             href={backHref}
-            className="flex items-center justify-center w-9 h-9 rounded-xl bg-surface hover:bg-surface-2 transition-colors text-white/70 hover:text-white shrink-0"
+            className="flex items-center justify-center w-9 h-9 rounded-xl bg-surface hover:bg-surface-2 transition-colors text-white/70 hover:text-white shrink-0 touch-manipulation active:opacity-80"
           >
             <ArrowLeft size={18} />
           </Link>

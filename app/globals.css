@@ -43,6 +43,8 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Faster tap response on mobile (no double-tap zoom wait on buttons/links) */
+  touch-action: manipulation;
 }
 
 body {
@@ -53,6 +55,30 @@ body {
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Momentum scrolling for overflow areas (iOS) */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .slide-up,
+  .float,
+  .pulse-glow,
+  .shimmer {
+    animation: none !important;
+  }
 }
 
 /* Scrollbar */
@@ -157,7 +183,7 @@ body {
   to { transform: translateY(0); opacity: 1; }
 }
 
-.slide-up { animation: slideUp 0.3s ease-out forwards; }
+.slide-up { animation: slideUp 0.22s ease-out forwards; }
 
 /* Fade in */
 @keyframes fadeIn {

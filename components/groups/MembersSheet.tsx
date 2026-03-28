@@ -72,7 +72,7 @@ export function MembersSheet({ groupId, members, currentUserId, isAdmin, votedUs
           onClick={() => setOpen(false)}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/75" />
 
           {/* Sheet: takes up to 75% of the viewport, flex column so list scrolls */}
           <div

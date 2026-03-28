@@ -16,7 +16,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center bg-surface/95 border-t border-white/8 backdrop-blur-xl"
+      className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center bg-surface border-t border-white/8 supports-[backdrop-filter]:bg-surface/98"
       style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
     >
       <div className="w-full max-w-[430px] mx-auto flex justify-around items-center px-2 pt-2">
@@ -27,8 +27,9 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
+              prefetch
               className={cn(
-                'flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-colors',
+                'flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-colors touch-manipulation select-none active:opacity-80',
                 isActive
                   ? 'text-brand-light'
                   : 'text-white/40 hover:text-white/70'

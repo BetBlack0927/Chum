@@ -22,9 +22,33 @@ export function Countdown({ targetTime, label = 'ends in', onExpire, className }
       }
     }
 
+    let id: ReturnType<typeof setInterval> | undefined
+    const start = () => {
+      if (id != null) return
+      id = setInterval(tick, 1000)
+    }
+    const stop = () => {
+      if (id != null) {
+        clearInterval(id)
+        id = undefined
+      }
+    }
+
+    const onVisibility = () => {
+      if (document.hidden) stop()
+      else {
+        tick()
+        start()
+      }
+    }
+
     tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
+    start()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      stop()
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [targetTime, onExpire])
 
   if (ms <= 0) return null

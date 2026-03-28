@@ -58,7 +58,7 @@ export function PhaseIndicator({ phase, votedCount, memberCount, className }: Ph
           </div>
           <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
             <div
-              className="h-full rounded-full bg-yellow-400 transition-all duration-500"
+              className="h-full rounded-full bg-yellow-400 transition-[width] duration-200 ease-out"
               style={{ width: `${Math.min(100, (votedCount / memberCount) * 100)}%` }}
             />
           </div>

@@ -31,7 +31,10 @@ export function WinnerReveal({
   userId, roundId, groupId, nextCategory, isInScrapbook,
 }: WinnerRevealProps) {
   const [revealed, setRevealed] = useState(false)
-  useEffect(() => { const t = setTimeout(() => setRevealed(true), 300); return () => clearTimeout(t) }, [])
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setRevealed(true))
+    return () => cancelAnimationFrame(t)
+  }, [])
 
   const winnerFlavorLabel  = useMemo(() => pickWinnerFlavorLabel(roundId), [roundId])
   const exposedFlavorLabel = useMemo(() => pickExposedFlavorLabel(roundId), [roundId])
@@ -48,8 +51,8 @@ export function WinnerReveal({
       {/* ── Winner card ── */}
       {winner ? (
         <div className={cn(
-          'rounded-3xl border border-gold/30 bg-gold/8 p-5 transition-all duration-700',
-          revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          'rounded-3xl border border-gold/30 bg-gold/8 p-5 transition-[opacity,transform] duration-300 ease-out',
+          revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
         )}>
           <div className="text-center mb-5">
             <p className="text-5xl float mb-2">🏆</p>
@@ -102,8 +105,8 @@ export function WinnerReveal({
       {/* ── Exposed voter ── */}
       {revealedVoter && (
         <div className={cn(
-          'rounded-3xl border border-red-500/40 bg-red-500/8 p-5 transition-all duration-700 delay-300',
-          revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          'rounded-3xl border border-red-500/40 bg-red-500/8 p-5 transition-[opacity,transform] duration-300 ease-out delay-75',
+          revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
         )}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-lg">👀</span>
@@ -145,8 +148,8 @@ export function WinnerReveal({
       {/* ── Anonymous reactions ── */}
       {allComments.length > 0 && (
         <div className={cn(
-          'rounded-3xl border border-brand/20 bg-brand/6 p-5 transition-all duration-700 delay-500',
-          revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          'rounded-3xl border border-brand/20 bg-brand/6 p-5 transition-[opacity,transform] duration-300 ease-out delay-150',
+          revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
         )}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-lg">💬</span>
@@ -257,7 +260,7 @@ export function WinnerReveal({
                     </div>
                     <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
                       <div
-                        className={cn('h-full rounded-full transition-all duration-700', isWinner ? 'bg-gold' : 'bg-white/20')}
+                        className={cn('h-full rounded-full transition-[width] duration-300 ease-out', isWinner ? 'bg-gold' : 'bg-white/20')}
                         style={{ width: `${pct}%` }}
                       />
                     </div>

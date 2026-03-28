@@ -23,6 +23,8 @@ export function Avatar({ username, color = '#8b5cf6', url, size = 'md', classNam
       <img
         src={url}
         alt={username}
+        loading="lazy"
+        decoding="async"
         className={cn('rounded-full object-cover shrink-0 select-none', sizes[size], className)}
       />
     )
