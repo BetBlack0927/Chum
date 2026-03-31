@@ -24,8 +24,10 @@ export function ScrapbookCard({ entry, isOwn }: ScrapbookCardProps) {
 
   if (removed) return null
 
-  const pct = entry.total_votes > 0
-    ? Math.round((entry.vote_count / entry.total_votes) * 100)
+  const voteCount = entry.vote_count ?? 0
+  const totalVotes = entry.total_votes ?? 0
+  const pct = totalVotes > 0
+    ? Math.round((voteCount / totalVotes) * 100)
     : null
 
   return (
@@ -62,7 +64,7 @@ export function ScrapbookCard({ entry, isOwn }: ScrapbookCardProps) {
 
       {pct !== null && (
         <p className="text-xs text-gold/55">
-          {entry.vote_count} {entry.vote_count === 1 ? 'vote' : 'votes'}
+          {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
           <span className="text-white/25"> · {pct}% of group</span>
         </p>
       )}

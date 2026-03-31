@@ -4,20 +4,14 @@ import { createClient } from '@/lib/supabase/server'
 import { TopBar } from '@/components/navigation/TopBar'
 import { AvatarUpload } from '@/components/profile/AvatarUpload'
 import { Card } from '@/components/ui/Card'
-import { ScrapbookCard } from '@/components/scrapbook/ScrapbookCard'
 import { signOut } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/Button'
 import { BioEditor } from './BioEditor'
-<<<<<<< HEAD
 import { getScrapbook } from '@/lib/actions/scrapbook'
 import { getCreatorPrompts, getCreatorPacks, getMyPrivatePrompts, getFollowCounts } from '@/lib/actions/shop'
 import { CreatorContentClient } from '@/app/(app)/creators/[username]/CreatorContentClient'
 import { FollowStats } from '@/app/(app)/creators/[username]/FollowStats'
 import { LogOut, Store, MessageSquare, ExternalLink } from 'lucide-react'
-=======
-import { getUserScrapbook } from '@/lib/actions/scrapbook'
-import { LogOut, Store, MessageSquare, ExternalLink, BookMarked } from 'lucide-react'
->>>>>>> b7f124a (scrapbook v1)
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -30,20 +24,12 @@ export default async function ProfilePage() {
     .eq('id', user.id)
     .single()
 
-<<<<<<< HEAD
   const [followCounts, scrapbookEntries, myPrompts, myPacks, myPrivatePrompts] = await Promise.all([
     getFollowCounts(user.id),
     getScrapbook(user.id),
     getCreatorPrompts(user.id),
     getCreatorPacks(user.id),
     getMyPrivatePrompts(),
-=======
-  const admin = createAdminClient()
-  const [promptCountResult, packCountResult, scrapbook] = await Promise.all([
-    admin.from('prompts').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
-    admin.from('prompt_packs').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
-    getUserScrapbook(user.id),
->>>>>>> b7f124a (scrapbook v1)
   ])
 
   const followerCount  = followCounts.followerCount
@@ -110,7 +96,6 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-<<<<<<< HEAD
         <CreatorContentClient
           prompts={myPrompts}
           packs={myPacks}
@@ -118,30 +103,6 @@ export default async function ProfilePage() {
           scrapbookReadonly={false}
           privatePrompts={myPrivatePrompts}
         />
-=======
-        {/* Scrapbook */}
-        <div className="rounded-2xl border border-white/8 bg-surface p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <BookMarked size={16} className="text-gold/70" />
-            <p className="text-xs font-bold text-white/50 uppercase tracking-wide">Scrapbook</p>
-            {scrapbook.length > 0 && (
-              <span className="ml-auto text-xs text-white/25">{scrapbook.length}</span>
-            )}
-          </div>
-
-          {scrapbook.length === 0 ? (
-            <p className="text-sm text-white/25 italic text-center py-4">
-              Win a round and save it here to remember it
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {scrapbook.map((entry) => (
-                <ScrapbookCard key={entry.id} entry={entry} isOwn />
-              ))}
-            </div>
-          )}
-        </div>
->>>>>>> b7f124a (scrapbook v1)
 
         {/* Account info */}
         <Card>
