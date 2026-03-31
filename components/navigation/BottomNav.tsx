@@ -17,7 +17,7 @@ export function BottomNav() {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center bg-surface border-t border-white/8 supports-[backdrop-filter]:bg-surface/98"
-      style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="w-full max-w-[430px] mx-auto flex justify-around items-center px-2 pt-2">
         {navItems.map(({ href, icon: Icon, label }) => {

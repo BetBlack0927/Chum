@@ -132,9 +132,18 @@ body {
 .phase-border-voting { border-color: rgba(251, 191, 36, 0.3); }
 .phase-border-results { border-color: rgba(52, 211, 153, 0.3); }
 
-/* Safe area padding for iOS */
+/* Safe area utilities for native iOS webview */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 .safe-bottom {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-screen {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .pb-safe {

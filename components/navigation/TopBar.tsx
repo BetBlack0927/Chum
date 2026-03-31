@@ -10,10 +10,7 @@ interface TopBarProps {
 
 export function TopBar({ title, backHref, right }: TopBarProps) {
   return (
-    <header
-      className="sticky top-0 z-40 bg-app-bg border-b border-white/6 supports-[backdrop-filter]:bg-app-bg/95"
-      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
-    >
+    <header className="sticky top-0 z-40 bg-app-bg border-b border-white/6 supports-[backdrop-filter]:bg-app-bg/95">
       <div className="flex items-center h-14 px-4 gap-3 max-w-[430px] mx-auto">
         {backHref ? (
           <Link
