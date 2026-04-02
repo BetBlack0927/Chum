@@ -1,5 +1,19 @@
 export type Phase = 'voting' | 'results'
 
+function parsePhaseOverride(raw: string | undefined | null): Phase | null {
+  if (raw == null || raw === '') return null
+  let v = String(raw).trim()
+  if (
+    (v.startsWith('"') && v.endsWith('"')) ||
+    (v.startsWith("'") && v.endsWith("'"))
+  ) {
+    v = v.slice(1, -1).trim()
+  }
+  v = v.toLowerCase()
+  if (v === 'results' || v === 'voting') return v
+  return null
+}
+
 /** Local hour when voting ends (0–23). Default 20 (8pm). Set `NEXT_PUBLIC_VOTING_END_HOUR`. */
 export const VOTING_END_HOUR = (() => {
   const raw = process.env.NEXT_PUBLIC_VOTING_END_HOUR
@@ -10,13 +24,31 @@ export const VOTING_END_HOUR = (() => {
 })()
 
 /**
- * Dev override: `NEXT_PUBLIC_FORCE_PHASE=voting` or `results` to ignore the clock.
- * Remove in production builds.
+ * Build-time override from `.env.local`: `NEXT_PUBLIC_FORCE_PHASE=results`
+ * (must restart `next dev`). Parsed at module load so the client bundle inlines it reliably.
  */
-function devForcedPhase(): Phase | null {
-  const v = process.env.NEXT_PUBLIC_FORCE_PHASE
-  if (v === 'results' || v === 'voting') return v
-  return null
+export const FORCED_PHASE_FROM_ENV = parsePhaseOverride(
+  process.env.NEXT_PUBLIC_FORCE_PHASE,
+)
+
+/** Browser-only: `?phase=results` or `localStorage.setItem('chum_dev_phase','results')` */
+const STORAGE_KEY = 'chum_dev_phase'
+
+function devForcedPhaseFromBrowser(): Phase | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const q = parsePhaseOverride(
+      new URLSearchParams(window.location.search).get('phase'),
+    )
+    if (q) return q
+  } catch {
+    /* ignore */
+  }
+  try {
+    return parsePhaseOverride(localStorage.getItem(STORAGE_KEY))
+  } catch {
+    return null
+  }
 }
 
 // Phase boundaries in LOCAL hours (detected in the browser)
@@ -28,8 +60,9 @@ export const PHASE_CONFIG = {
 } as const
 
 export function getCurrentPhase(now: Date = new Date()): Phase {
-  const forced = devForcedPhase()
-  if (forced) return forced
+  const fromBrowser = devForcedPhaseFromBrowser()
+  if (fromBrowser) return fromBrowser
+  if (FORCED_PHASE_FROM_ENV) return FORCED_PHASE_FROM_ENV
   const hour = now.getHours() // local time — call this only in the browser
   if (hour < VOTING_END_HOUR) return 'voting'
   return 'results'
